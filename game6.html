@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Number Guessing Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2b1055, #7597de);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00f2fe;
+        }
+
+        .message {
+            font-size: 1.05rem;
+            margin-bottom: 20px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffeb3b;
+            font-weight: 500;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4facfe;
+            border-radius: 10px;
+            padding: 10px;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            outline: none;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            border: none;
+            color: #111;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.6);
+        }
+
+        .btn-restart {
+            width: 100%;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+            color: white;
+            display: none;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tebak Angka Rahasia</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Sisa Kesempatan: <span id="attempts">10</span></div>
+            <div class="score-box">Rentang: <span id="range">1 - 100</span></div>
+        </div>
+
+        <div class="message" id="message">Pilih angka antara 1 sampai 100 dan mulai menebak!</div>
+
+        <div class="input-group" id="inputGroup">
+            <input type="number" id="userGuess" placeholder="Masukkan angka" min="1" max="100">
+            <button class="btn" id="guessBtn">Tebak</button>
+        </div>
+
+        <button class="btn btn-restart" id="restartBtn">Main Lagi</button>
+
+        <div class="instructions">
+            Komputer memilih angka acak. Cari tahu apakah tebakan Anda terlalu besar atau terlalu kecil!
+        </div>
+    </div>
+
+    <script>
+        let secretNumber = Math.floor(Math.random() * 100) + 1;
+        let attemptsLeft = 10;
+
+        const messageElement = document.getElementById("message");
+        const attemptsElement = document.getElementById("attempts");
+        const userGuessInput = document.getElementById("userGuess");
+        const guessBtn = document.getElementById("guessBtn");
+        const restartBtn = document.getElementById("restartBtn");
+        const inputGroup = document.getElementById("inputGroup");
+
+        guessBtn.addEventListener("click", handleGuess);
+        userGuessInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") handleGuess();
+        });
+
+        restartBtn.addEventListener("click", resetGame);
+
+        function handleGuess() {
+            const guess = parseInt(userGuessInput.value);
+
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                messageElement.innerText = "⚠️ Masukkan angka valid antara 1 sampai 100!";
+                return;
+            }
+
+            attemptsLeft--;
+            attemptsElement.innerText = attemptsLeft;
+
+            if (guess === secretNumber) {
+                messageElement.innerText = `🎉 Luar Biasa! Angka yang benar adalah ${secretNumber}.`;
+                endGame();
+            } else if (attemptsLeft === 0) {
+                messageElement.innerText = `❌ Game Over! Angka rahasianya adalah ${secretNumber}.`;
+                endGame();
+            } else if (guess < secretNumber) {
+                messageElement.innerText = `📈 Terlalu KECIL! Cari angka yang lebih besar.`;
+            } else {
+                messageElement.innerText = `📉 Terlalu BESAR! Cari angka yang lebih kecil.`;
+            }
+
+            userGuessInput.value = "";
+            userGuessInput.focus();
+        }
+
+        function endGame() {
+            inputGroup.style.display = "none";
+            restartBtn.style.display = "block";
+        }
+
+        function resetGame() {
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+            attemptsLeft = 10;
+            attemptsElement.innerText = attemptsLeft;
+            messageElement.innerText = "Pilih angka antara 1 sampai 100 dan mulai menebak!";
+            userGuessInput.value = "";
+            inputGroup.style.display = "flex";
+            restartBtn.style.display = "none";
+        }
+    </script>
+</body>
+</html>

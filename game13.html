@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Color Switch Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #120224, #2a0845, #120224);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #00ffcc, #ff007f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00ffcc;
+        }
+
+        canvas {
+            background-color: #05010a;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            display: block;
+            margin: 0 auto 15px auto;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ffcc, #0072ff);
+            border: none;
+            color: #000;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 204, 0.6);
+        }
+
+        .instructions {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Color Switch</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <div class="score-box">Rekor: <span id="highScore">0</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="360" height="420"></canvas>
+
+        <button class="btn" id="startBtn">Mulai Game</button>
+
+        <div class="instructions">
+            Klik **Tombol Spasi** atau **Sentuh Layar** untuk membuat bola melompat. Lewati cincin yang warnanya sama dengan warna bola!
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const highScoreElement = document.getElementById("highScore");
+        const startBtn = document.getElementById("startBtn");
+
+        let score = 0;
+        let highScore = localStorage.getItem("colorSwitchHighScore") || 0;
+        highScoreElement.innerText = highScore;
+
+        let isPlaying = false;
+        let animationId = null;
+
+        const colors = ["#ff007f", "#00ffcc", "#ffeb3b", "#7000ff"];
+
+        // Bola Pemain
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height - 60,
+            radius: 10,
+            vy: 0,
+            gravity: 0.35,
+            jump: -7,
+            color: colors[0]
+        };
+
+        // Cincin Rintangan
+        let ring = {
+            x: canvas.width / 2,
+            y: 150,
+            radius: 70,
+            thickness: 14,
+            angle: 0,
+            speed: 0.03
+        };
+
+        // Kotak Ganti Warna
+        let switcher = {
+            x: canvas.width / 2,
+            y: 280,
+            radius: 12,
+            active: true,
+            color: "#ffffff"
+        };
+
+        // Kontrol
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space" && isPlaying) {
+                e.preventDefault();
+                ball.vy = ball.jump;
+            }
+        });
+
+        canvas.addEventListener("click", () => {
+            if (isPlaying) {
+                ball.vy = ball.jump;
+            }
+        });
+
+        function update() {
+            // Fisika Bola
+            ball.vy += ball.gravity;
+            ball.y += ball.vy;
+
+            // Putar Cincin
+            ring.angle += ring.speed;
+
+            // Batas Bawah dan Atas Canvas
+            if (ball.y > canvas.height - 20) {
+                gameOver();
+            }
+            if (ball.y < 30) {
+                ball.y = 30;
+                ball.vy = 0;
+            }
+
+            // Cek Tabrakan dengan Switcher Warna
+            if (switcher.active) {
+                let dist = Math.hypot(ball.x - switcher.x, ball.y - switcher.y);
+                if (dist < ball.radius + switcher.radius) {
+                    // Ganti warna bola secara acak ke warna lain
+                    let newColor;
+                    do {
+                        newColor = colors[Math.floor(Math.random() * colors.length)];
+                    } while (newColor === ball.color);
+                    ball.color = newColor;
+                    switcher.active = false;
+                }
+            }
+
+            // Cek Tabrakan dengan Cincin Rintangan
+            let distToRing = Math.hypot(ball.x - ring.x, ball.y - ring.y);
+            if (distToRing >= ring.radius - ring.thickness && distToRing <= ring.radius + ring.thickness) {
+                // Hitung sudut posisi bola relatif terhadap pusat cincin
+                let angleToBall = Math.atan2(ball.y - ring.y, ball.x - ring.x);
+                if (angleToBall < 0) angleToBall += Math.PI * 2;
+
+                // Tentukan kuadran/segmen cincin yang cocok berdasarkan sudut putar (ring.angle)
+                let normalizedAngle = (angleToBall - ring.angle) % (Math.PI * 2);
+                if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
+
+                let segmentIndex = Math.floor(normalizedAngle / (Math.PI / 2)) % 4;
+                let segmentColors = [colors[0], colors[1], colors[2], colors[3]];
+
+                // Jika warna bola tidak cocok dengan segmen cincin yang disentuh, Game Over!
+                if (segmentColors[segmentIndex] !== ball.color) {
+                    gameOver();
+                }
+            }
+
+            // Jika bola melewati cincin ke atas
+            if (ball.y < ring.y - ring.radius - 20 && !switcher.active) {
+                score += 1;
+                scoreElement.innerText = score;
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreElement.innerText = highScore;
+                    localStorage.setItem("colorSwitchHighScore", highScore);
+                }
+                // Reset posisi cincin dan switcher ke bawah untuk tantangan berikutnya
+                ring.y = 120;
+                switcher.y = 260;
+                switcher.active = true;
+                ball.y = canvas.height - 60;
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = "#05010a";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar 4 Segmen Cincin Rintangan
+            let segAngle = Math.PI / 2;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.arc(ring.x, ring.y, ring.radius, ring.angle + i * segAngle, ring.angle + (i + 1) * segAngle);
+                ctx.lineWidth = ring.thickness;
+                ctx.strokeStyle = colors[i];
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = colors[i];
+                ctx.stroke();
+                ctx.closePath();
+            }
+            ctx.shadowBlur = 0;
+
+            // Gambar Switcher Warna (jika aktif)
+            if (switcher.active) {
+                ctx.beginPath();
+                ctx.arc(switcher.x, switcher.y, switcher.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffffff";
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = "#ffffff";
+                ctx.fill();
+                ctx.closePath();
+                ctx.shadowBlur = 0;
+            }
+
+            // Gambar Bola Pemain
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ball.color;
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0;
+            scoreElement.innerText = score;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height - 60;
+            ball.vy = 0;
+            ball.color = colors[0];
+            ring.y = 150;
+            ring.angle = 0;
+            switcher.y = 280;
+            switcher.active = true;
+            isPlaying = true;
+            startBtn.style.display = "none";
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            startBtn.style.display = "inline-block";
+            startBtn.innerText = "Main Lagi";
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 24px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+            ctx.font = "16px Segoe UI";
+            ctx.fillStyle = "#00ffcc";
+            ctx.fillText("Skor Akhir: " + score, canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        startBtn.addEventListener("click", startGame);
+
+        // Tampilan Awal Canvas
+        ctx.fillStyle = "#05010a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Tekan 'Mulai Game'", canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

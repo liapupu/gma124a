@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake vs Blocks Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0b051a, #1a083b, #050210);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #ff007f, #00ffcc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00ffcc;
+        }
+
+        canvas {
+            background-color: #030108;
+            border: 2px solid #ff007f;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.3);
+            display: block;
+            margin: 0 auto 15px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff007f, #7000ff);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 127, 0.6);
+        }
+
+        .instructions {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Snake vs Blocks</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Panjang Ular: <span id="snakeLength">5</span></div>
+            <div class="score-box">Skor: <span id="score">0</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="360" height="450"></canvas>
+
+        <button class="btn" id="startBtn">Mulai Game</button>
+
+        <div class="instructions">
+            Geser **Mouse/Sentuh Layar** ke kiri/kanan untuk mengarahkan ular. Kumpulkan bola kuning untuk bertambah panjang, dan hancurkan blok angka!
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const lengthElement = document.getElementById("snakeLength");
+        const scoreElement = document.getElementById("score");
+        const startBtn = document.getElementById("startBtn");
+
+        let score = 0;
+        let snakeLength = 5;
+        let isPlaying = false;
+        let animationId = null;
+
+        // Posisi Ular
+        let snake = {
+            x: canvas.width / 2,
+            y: canvas.height - 70,
+            radius: 12,
+            speed: 4
+        };
+
+        let obstacles = []; // Blok angka
+        let items = [];     // Bola penambah panjang
+        let spawnTimer = 0;
+
+        // Kontrol Mouse / Sentuh
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            snake.x = e.clientX - rect.left;
+            if (snake.x < 15) snake.x = 15;
+            if (snake.x > canvas.width - 15) snake.x = canvas.width - 15;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            snake.x = e.touches[0].clientX - rect.left;
+            if (snake.x < 15) snake.x = 15;
+            if (snake.x > canvas.width - 15) snake.x = canvas.width - canvas.width + 15;
+        }, { passive: true });
+
+        function spawnObstacle() {
+            let cols = 4;
+            let colWidth = canvas.width / cols;
+            let randomCol = Math.floor(Math.random() * cols);
+            let blockVal = Math.floor(Math.random() * 8) + 1; // Nilai blok 1 - 8
+
+            obstacles.push({
+                x: randomCol * colWidth + 10,
+                y: -50,
+                width: colWidth - 20,
+                height: 40,
+                value: blockVal,
+                speed: 2.2
+            });
+
+            // Munculkan bola penambah panjang di kolom lain
+            if (Math.random() > 0.3) {
+                let itemCol = (randomCol + 2) % cols;
+                items.push({
+                    x: itemCol * colWidth + colWidth / 2,
+                    y: -50,
+                    radius: 10,
+                    value: Math.floor(Math.random() * 3) + 1,
+                    speed: 2.2
+                });
+            }
+        }
+
+        function update() {
+            spawnTimer++;
+            if (spawnTimer % 65 === 0) {
+                spawnObstacle();
+            }
+
+            // Pergerakan Blok Angka
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += obstacles[i].speed;
+
+                // Cek tabrakan kepala ular dengan blok
+                if (
+                    snake.x + snake.radius > obstacles[i].x &&
+                    snake.x - snake.radius < obstacles[i].x + obstacles[i].width &&
+                    snake.y + snake.radius > obstacles[i].y &&
+                    snake.y - snake.radius < obstacles[i].y + obstacles[i].height
+                ) {
+                    // Kurangi panjang ular berdasarkan nilai blok
+                    snakeLength -= 1;
+                    lengthElement.innerText = snakeLength;
+                    obstacles[i].value -= 1;
+
+                    if (obstacles[i].value <= 0) {
+                        score += 10;
+                        scoreElement.innerText = score;
+                        obstacles.splice(i, 1);
+                        continue;
+                    }
+
+                    if (snakeLength <= 0) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                // Hapus jika lewat bawah layar
+                if (obstacles[i] && obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Pergerakan Item Bola Energi
+            for (let i = items.length - 1; i >= 0; i--) {
+                items[i].y += items[i].speed;
+
+                // Cek tabrakan dengan ular
+                let distX = snake.x - items[i].x;
+                let distY = snake.y - items[i].y;
+                let distance = Math.sqrt(distX * distX + distY * distY);
+
+                if (distance < snake.radius + items[i].radius) {
+                    snakeLength += items[i].value;
+                    lengthElement.innerText = snakeLength;
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                if (items[i] && items[i].y > canvas.height) {
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = "#030108";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Blok Angka
+            obstacles.forEach(obs => {
+                ctx.fillStyle = "#ff007f";
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "#ff007f";
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 16px Segoe UI";
+                ctx.textAlign = "center";
+                ctx.fillText(obs.value, obs.x + obs.width / 2, obs.y + 26);
+            });
+
+            // Gambar Bola Penambah Panjang
+            items.forEach(it => {
+                ctx.beginPath();
+                ctx.arc(it.x, it.y, it.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffeb3b";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#ffeb3b";
+                ctx.fill();
+                ctx.closePath();
+
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 11px Segoe UI";
+                ctx.textAlign = "center";
+                ctx.fillText("+" + it.value, it.x, it.y + 4);
+            });
+
+            // Gambar Kepala Ular
+            ctx.beginPath();
+            ctx.arc(snake.x, snake.y, snake.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#00ffcc";
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#00ffcc";
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+
+            // Tampilkan angka panjang di kepala ular
+            ctx.fillStyle = "#030108";
+            ctx.font = "bold 11px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText(snakeLength, snake.x, snake.y + 4);
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0;
+            snakeLength = 5;
+            scoreElement.innerText = score;
+            lengthElement.innerText = snakeLength;
+            obstacles = [];
+            items = [];
+            spawnTimer = 0;
+            isPlaying = true;
+            startBtn.style.display = "none";
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            startBtn.style.display = "inline-block";
+            startBtn.innerText = "Main Lagi";
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 24px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+            ctx.font = "16px Segoe UI";
+            ctx.fillStyle = "#00ffcc";
+            ctx.fillText("Skor Akhir: " + score, canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        startBtn.addEventListener("click", startGame);
+
+        // Tampilan awal canvas
+        ctx.fillStyle = "#030108";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Tekan 'Mulai Game'", canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Word Guessing Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #00ff87, #60efff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hint {
+            font-size: 0.9rem;
+            color: #d1ffd6;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00ff87;
+        }
+
+        .word-display {
+            font-size: 2rem;
+            letter-spacing: 8px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(96, 239, 255, 0.5);
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .key-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .key-btn:hover:not(:disabled) {
+            background: rgba(0, 255, 135, 0.3);
+            border-color: #00ff87;
+        }
+
+        .key-btn:disabled {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-restart {
+            width: 100%;
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.4);
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 176, 155, 0.6);
+        }
+
+        .message {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 25px;
+            color: #ffeb3b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tebak Kata Tech</h1>
+        <div class="hint" id="hintText">Petunjuk: Kategori Teknologi & Pemrograman</div>
+
+        <div class="scoreboard">
+            <div class="score-box">Kesempatan Salah: <span id="mistakes">0</span> / 6</div>
+        </div>
+
+        <div class="message" id="message"></div>
+        <div class="word-display" id="wordDisplay">_ _ _ _ _</div>
+
+        <div class="keyboard" id="keyboard"></div>
+
+        <button class="btn-restart" id="restartBtn">Main Lagi</button>
+    </div>
+
+    <script>
+        const wordList = [
+            { word: "JAVASCRIPT", hint: "Bahasa pemrograman populer untuk web" },
+            { word: "PYTHON", hint: "Bahasa pemrograman berlambang ular" },
+            { word: "INTERNET", hint: "Jaringan komputer global" },
+            { word: "DATABASE", hint: "Tempat penyimpanan data terstruktur" },
+            { word: "HTML", hint: "Struktur dasar halaman web" },
+            { word: "GITHUB", hint: "Platform kolaborasi kode & version control" },
+            { word: "ALGORITMA", hint: "Langkah-langkah logis penyelesaian masalah" },
+            { word: "SOFTWARE", hint: "Perangkat lunak komputer" }
+        ];
+
+        let selectedObj = {};
+        let word = "";
+        let guessedLetters = [];
+        let mistakes = 0;
+        const maxMistakes = 6;
+
+        const wordDisplay = document.getElementById("wordDisplay");
+        const keyboard = document.getElementById("keyboard");
+        const mistakesElement = document.getElementById("mistakes");
+        const hintText = document.getElementById("hintText");
+        const messageElement = document.getElementById("message");
+        const restartBtn = document.getElementById("restartBtn");
+
+        function initGame() {
+            selectedObj = wordList[Math.floor(Math.random() * wordList.length)];
+            word = selectedObj.word;
+            hintText.innerText = `Petunjuk: ${selectedObj.hint}`;
+            guessedLetters = [];
+            mistakes = 0;
+            mistakesElement.innerText = mistakes;
+            messageElement.innerText = "";
+            restartBtn.style.display = "none";
+            keyboard.style.display = "grid";
+
+            updateWordDisplay();
+            createKeyboard();
+        }
+
+        function updateWordDisplay() {
+            let displayString = "";
+            let win = true;
+
+            for (let letter of word) {
+                if (guessedLetters.includes(letter)) {
+                    displayString += letter + " ";
+                } else {
+                    displayString += "_ ";
+                    win = false;
+                }
+            }
+
+            wordDisplay.innerText = displayString.trim();
+
+            if (win) {
+                messageElement.innerText = "🎉 Luar Biasa! Kamu Berhasil Menebak!";
+                endGame();
+            }
+        }
+
+        function createKeyboard() {
+            keyboard.innerHTML = "";
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            for (let letter of alphabet) {
+                const btn = document.createElement("button");
+                btn.classList.add("key-btn");
+                btn.innerText = letter;
+                btn.addEventListener("click", () => handleGuess(letter, btn));
+                keyboard.appendChild(btn);
+            }
+        }
+
+        function handleGuess(letter, btn) {
+            btn.disabled = true;
+            guessedLetters.push(letter);
+
+            if (word.includes(letter)) {
+                updateWordDisplay();
+            } else {
+                mistakes++;
+                mistakesElement.innerText = mistakes;
+
+                if (mistakes >= maxMistakes) {
+                    messageElement.innerText = `❌ Game Over! Kata yang benar: ${word}`;
+                    wordDisplay.innerText = word.split("").join(" ");
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            keyboard.style.display = "none";
+            restartBtn.style.display = "block";
+        }
+
+        restartBtn.addEventListener("click", initGame);
+
+        // Mulai game pertama kali
+        initGame();
+    </script>
+</body>
+</html>

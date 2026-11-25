@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tembak Balon 🎯🎈</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+  body{background:linear-gradient(180deg,#1e90ff,#87CEEB,#FFEAA7);min-height:100vh;display:flex;justify-content:center;padding:12px;color:#222;overflow:hidden}
+  .wrap{width:100%;max-width:520px;text-align:center}
+  h1{font-size:28px;text-shadow:0 2px 0 #fff}
+  h1 span{color:#e84393}
+  .sub{font-size:12px;opacity:.8;margin:5px 0 10px}
+  .hud{display:flex;gap:8px;margin-bottom:10px}
+  .hcard{background:white;border-radius:14px;padding:9px;flex:1;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+  .hcard b{font-size:20px;display:block;color:#6c5ce7}
+  .hcard small{font-size:10px;letter-spacing:1px;opacity:.7}
+  #box{position:relative;width:100%;height:520px;background:linear-gradient(180deg,#aee9ff 0%,#e0f7ff 45%,#fff9c4 100%);border:3px solid #fff;border-radius:22px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);cursor:crosshair;touch-action:none}
+  .cloud{position:absolute;font-size:34px;opacity:.7;pointer-events:none;animation:cloudMove linear infinite}
+  @keyframes cloudMove{from{left:-60px}to{left:110%}}
+  .balloon{position:absolute;width:62px;height:78px;border-radius:50% 50% 50% 50% / 55% 55% 45% 45%;display:flex;align-items:center;justify-content:center;font-size:30px;color:white;font-weight:900;cursor:pointer;user-select:none;box-shadow:inset -8px -6px 12px rgba(0,0,0,.15), inset 6px 8px 10px rgba(255,255,255,.5);transition:transform .08s;z-index:2}
+  .balloon:active{transform:scale(.9)}
+  .balloon::after{content:'';position:absolute;bottom:-10px;left:50%;width:2px;height:14px;background:#888;transform:translateX(-50%)}
+  .balloon::before{content:'';position:absolute;top:12px;left:12px;width:14px;height:18px;background:rgba(255,255,255,.7);border-radius:50%;transform:rotate(-20deg)}
+  .balloon.gold{animation:wobble .6s infinite alternate}
+  .balloon.bomb{animation:shakeX .4s infinite}
+  @keyframes wobble{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+  @keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .particle{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:10}
+  .floatText{position:absolute;font-weight:900;font-size:22px;pointer-events:none;z-index:11;text-shadow:0 2px 0 white;animation:floatUp .8s forwards}
+  @keyframes floatUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-50px);opacity:0}}
+  #overlay{position:absolute;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;z-index:20;color:white}
+  #overlay h2{font-size:30px;line-height:1.1}
+  #overlay p{font-size:13px;line-height:1.5;opacity:.9}
+  button{background:#ffdd59;color:#222;border:none;padding:13px 24px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 5px 0 #c9a800}
+  button:active{transform:translateY(3px);box-shadow:0 2px 0 #c9a800}
+  button.white{background:white;box-shadow:0 5px 0 #aaa}
+  button.pink{background:#e84393;color:white;box-shadow:0 5px 0 #a71a5f}
+  .hidden{display:none!important}
+  .float{animation:floatY 2s infinite}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin-bottom:10px}
+  #timeBar{height:100%;background:linear-gradient(90deg,#00b894,#ffdd59,#ff4757);width:100%;transition:width 1s linear}
+  .combo{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#ff4757;color:white;padding:6px 14px;border-radius:999px;font-weight:800;font-size:13px;z-index:15;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+  .crosshair{position:absolute;width:34px;height:34px;border:2px solid #ff4757;border-radius:50%;pointer-events:none;z-index:5;transform:translate(-50%,-50%);display:none}
+  .crosshair::after{content:'+';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff4757;font-size:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 TEMBAK <span>BALON</span> 🎈</h1>
+  <p class="sub">Seberapa cepat tangan & matamu? Buktikan!</p>
+
+  <div class="hud">
+    <div class="hcard"><b id="score">0</b><small>SKOR</small></div>
+    <div class="hcard"><b id="hits">0</b><small>KENA</small></div>
+    <div class="hcard"><b id="combo">x0</b><small>KOMBO</small></div>
+    <div class="hcard"><b id="lives">❤️❤️❤️</b><small>NYAWA</small></div>
+    <div class="hcard"><b id="best">0</b><small>TERBAIK</small></div>
+  </div>
+  <div class="bar"><div id="timeBar"></div></div>
+
+  <div id="box">
+    <div class="cloud" style="top:30px;animation-duration:22s">☁️</div>
+    <div class="cloud" style="top:90px;animation-duration:30s;animation-delay:-10s">☁️</div>
+    <div class="cloud" style="top:150px;animation-duration:26s;animation-delay:-5s;font-size:26px">☁️</div>
+    <div id="crosshair" class="crosshair"></div>
+    <div id="comboBadge" class="combo hidden">🔥 KOMBO x5!</div>
+    <div id="overlay">
+      <div class="float" style="font-size:58px">🎈🎯</div>
+      <h2>Siap Menembak?</h2>
+      <p>🎈 Pink <b>+10</b> • 💙 Biru <b>+15</b> • 💚 Hijau <b>+20</b><br>⭐ Emas <b>+50</b> • 💎 Berlian <b>+100</b><br>💣 Bom <b>-1 Nyawa</b> • Jangan sampai balon lolos!</p>
+      <button onclick="startGame()">▶ MULAI TEMBAK</button>
+      <small>Best: <span id="bestText">0</span> • Waktu 60 detik!</small>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="white" style="flex:1" onclick="togglePause()">⏸ Jeda</button>
+    <button class="pink" style="flex:1" onclick="startGame()">🔄 Main Lagi</button>
+  </div>
+  <p style="font-size:11px;opacity:.7;margin-top:8px">💡 Tip: Balon emas muncul sebentar saja! Cepat tembak! Akurasi 90%+ = Bonus +200</p>
+</div>
+
+<script>
+let score=0, hits=0, shots=0, combo=0, maxCombo=0, lives=3, best=localStorage.getItem('balon_best')||0;
+let playing=false, paused=false, timeLeft=60, spawnInt=null, timerInt=null, level=1;
+const box=document.getElementById('box'), overlay=document.getElementById('overlay'), cross=document.getElementById('crosshair');
+document.getElementById('best').textContent=best;
+document.getElementById('bestText').textContent=best;
+
+function beep(f=600,d=.07,type='sine'){try{let c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.value=.1;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function popSound(pts){ if(pts<0) beep(150,.25,'sawtooth'); else if(pts>=50) {beep(900,.08); setTimeout(()=>beep(1200,.1),60); setTimeout(()=>beep(1500,.12),120);} else beep(700,.08); }
+
+function startGame(){
+  score=0; hits=0; shots=0; combo=0; maxCombo=0; lives=3; timeLeft=60; level=1; playing=true; paused=false;
+  document.querySelectorAll('.balloon').forEach(b=>b.remove());
+  document.querySelectorAll('.particle,.floatText').forEach(p=>p.remove());
+  overlay.classList.add('hidden'); updateHUD();
+  clearInterval(spawnInt); clearInterval(timerInt);
+  spawnInt=setInterval(spawnBalloon, 700);
+  timerInt=setInterval(()=>{
+    if(paused) return;
+    timeLeft--; document.getElementById('timeBar').style.width=(timeLeft/60*100)+'%';
+    if(timeLeft<=10) beep(300,.08);
+    if(timeLeft<=0) gameOver();
+    if(timeLeft===40) level=2;
+    if(timeLeft===20) level=3;
+  },1000);
+  beep(800,.12);
+}
+function togglePause(){
+  if(!playing) return; paused=!paused;
+  document.querySelectorAll('.balloon').forEach(b=>b.style.animationPlayState = paused?'paused':'running');
+}
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('hits').textContent=hits;
+  document.getElementById('combo').textContent='x'+combo;
+  document.getElementById('lives').textContent='❤️'.repeat(Math.max(0,lives))||'💔';
+  document.getElementById('timeBar').style.width=(timeLeft/60*100)+'%';
+  let badge=document.getElementById('comboBadge');
+  if(combo>=3){badge.classList.remove('hidden'); badge.textContent='🔥 KOMBO x'+combo+'!';} else badge.classList.add('hidden');
+}
+function spawnBalloon(){
+  if(!playing||paused) return;
+  let r=Math.random();
+  let cfg;
+  if(r<0.30) cfg={bg:'#ff6b9d',emoji:'🎈',pts:10};
+  else if(r<0.55) cfg={bg:'#4facfe',emoji:'💙',pts:15};
+  else if(r<0.75) cfg={bg:'#00b894',emoji:'💚',pts:20};
+  else if(r<0.88) cfg={bg:'#ffdd59',emoji:'⭐',pts:50,isGold:true};
+  else if(r<0.94) cfg={bg:'#a29bfe',emoji:'💎',pts:100,isGold:true};
+  else cfg={bg:'#2d3436',emoji:'💣',pts:-1,isBomb:true};
+
+  let b=document.createElement('div');
+  b.className='balloon'+(cfg.isGold?' gold':'')+(cfg.isBomb?' bomb':'');
+  b.style.background=cfg.bg;
+  b.style.left=Math.random()*78+'%';
+  b.style.bottom='-90px';
+  b.textContent=cfg.emoji;
+  b.dataset.pts=cfg.pts;
+  box.appendChild(b);
+
+  let y=-90, speed = (1.2 + Math.random()*1.2 + level*0.4);
+  let wobble = Math.random()*100;
+  let fall=setInterval(()=>{
+    if(!playing){clearInterval(fall); b.remove(); return;}
+    if(paused) return;
+    y+=speed; b.style.bottom=y+'px';
+    b.style.transform=`translateX(${Math.sin((y+wobble)/40)*8}px)`;
+    if(y>560){
+      clearInterval(fall); b.remove();
+      if(!cfg.isBomb){ lives--; combo=0; beep(250,.2,'sawtooth'); box.style.boxShadow='0 0 0 4px #ff4757'; setTimeout(()=>box.style.boxShadow='0 10px 30px rgba(0,0,0,.2)',200); if(lives<=0) gameOver(); }
+      updateHUD();
+    }
+  },16);
+
+  b.addEventListener('pointerdown',e=>{
+    e.stopPropagation();
+    if(!playing||paused) return;
+    clearInterval(fall);
+    let pts=parseInt(b.dataset.pts);
+    let rect=b.getBoundingClientRect(), boxRect=box.getBoundingClientRect();
+    let x=rect.left-boxRect.left+30, yPos=rect.top-boxRect.top+30;
+    if(pts===-1){
+      lives--; combo=0; score=Math.max(0,score-30);
+      showFloat(x,yPos,'💥 -30','#ff4757'); burst(x,yPos,'#2d3436'); popSound(-1);
+      if(lives<=0){ b.remove(); gameOver(); return; }
+    } else {
+      hits++; combo++; maxCombo=Math.max(maxCombo,combo); score+=pts;
+      if(combo>0 && combo%5===0){ score+=100; showFloat(x,yPos-30,'🔥 KOMBO +100','#ff4757'); }
+      showFloat(x,yPos,'+'+pts, pts>=50?'#f1c40f':'#00b894');
+      burst(x,yPos,cfg.bg); popSound(pts);
+    }
+    b.remove(); updateHUD();
+  });
+}
+function burst(x,y,color){
+  for(let i=0;i<12;i++){
+    let p=document.createElement('div'); p.className='particle';
+    p.style.background=color; p.style.left=x+'px'; p.style.top=y+'px'; box.appendChild(p);
+    let a=Math.random()*Math.PI*2, d=35+Math.random()*45;
+    p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d+30}px) scale(0)`,opacity:0}],{duration:550}).onfinish=()=>p.remove();
+  }
+}
+function showFloat(x,y,text,color){
+  let f=document.createElement('div'); f.className='floatText'; f.textContent=text; f.style.left=x+'px'; f.style.top=y+'px'; f.style.color=color; box.appendChild(f);
+  setTimeout(()=>f.remove(),800);
+}
+function gameOver(){
+  playing=false; clearInterval(spawnInt); clearInterval(timerInt);
+  document.querySelectorAll('.balloon').forEach(b=>b.remove());
+  let acc = shots>0 ? Math.round(hits/shots*100) : 100;
+  let bonus = acc>=90 ? 200 : 0; score+=bonus;
+  if(score>best){best=score; localStorage.setItem('balon_best',best); document.getElementById('best').textContent=best;}
+  beep(300,.4,'sawtooth');
+  overlay.classList.remove('hidden');
+  overlay.innerHTML=`<div style="font-size:56px">🎯</div><h2>Waktu Habis!</h2><p>Tembakan kena: <b>${hits}</b> • Akurasi: <b>${acc}%</b> ${bonus?'+ Bonus Akurasi +200':''}<br>Kombo max: <b>x${maxCombo}</b> • Nyawa sisa: <b>${lives}</b><br>Skor Akhir: <b style="font-size:24px;color:#ffdd59">${score}</b><br>${score>=best&&score>0?'🏆 REKOR BARU! Hebat!':'Yuk coba lagi, pasti lebih jago!'}</p><button onclick="startGame()">🔄 MAIN LAGI</button>`;
+}
+// miss click = combo reset
+box.addEventListener('pointerdown',e=>{
+  if(!playing||paused) return;
+  if(e.target===box || e.target.classList.contains('cloud')){
+    shots++; combo=0; updateHUD();
+    // efek tembakan
+    let rect=box.getBoundingClientRect();
+    showFloat(e.clientX-rect.left, e.clientY-rect.top, 'MISS', '#ff4757');
+    beep(180,.05);
+  } else if(e.target.classList.contains('balloon')){
+    shots++;
+  }
+  // crosshair
+  let rect=box.getBoundingClientRect();
+  cross.style.display='block'; cross.style.left=(e.clientX-rect.left)+'px'; cross.style.top=(e.clientY-rect.top)+'px';
+  setTimeout(()=>cross.style.display='none',200);
+});
+box.addEventListener('mousemove',e=>{
+  let rect=box.getBoundingClientRect();
+  cross.style.display='block'; cross.style.left=(e.clientX-rect.left)+'px'; cross.style.top=(e.clientY-rect.top)+'px';
+});
+document.addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){e.preventDefault(); if(!playing) startGame();} if(e.code==='KeyP') togglePause(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Penjaga Cahaya Kebaikan ✨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+  body{background:#0f0c29;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center;color:white;padding:12px;overflow:hidden}
+  .wrap{width:100%;max-width:480px;text-align:center}
+  h1{font-size:26px;letter-spacing:1px;text-shadow:0 0 18px #ffdd59}
+  h1 span{color:#ffdd59}
+  p.sub{opacity:.85;font-size:13px;margin:6px 0 12px}
+  .hud{display:flex;gap:8px;justify-content:space-between;margin-bottom:10px}
+  .card{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:10px 12px;flex:1}
+  .card b{font-size:20px;display:block}
+  .card small{opacity:.8;font-size:11px;letter-spacing:1px}
+  #game{position:relative;width:100%;height:520px;background:linear-gradient(180deg,#1a1a40,#0b0b2a);border:3px solid #ffdd59;border-radius:20px;overflow:hidden;box-shadow:0 0 35px rgba(255,221,89,.35);touch-action:none;cursor:none}
+  #player{position:absolute;bottom:14px;left:50%;width:64px;height:64px;transform:translateX(-50%);font-size:52px;line-height:64px;filter:drop-shadow(0 0 12px gold);z-index:5;transition:transform .08s}
+  .item{position:absolute;font-size:32px;line-height:1;user-select:none;will-change:transform;filter:drop-shadow(0 0 8px rgba(255,255,255,.6))}
+  .particle{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:10}
+  #overlay{position:absolute;inset:0;background:rgba(0,0,0,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;z-index:20;text-align:center}
+  #overlay h2{font-size:32px;line-height:1.1}
+  #overlay p{font-size:14px;line-height:1.5;opacity:.9}
+  button{background:#ffdd59;color:#222;border:none;padding:13px 22px;border-radius:999px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 6px 0 #c9a800;transition:.15s}
+  button:active{transform:translateY(4px);box-shadow:0 2px 0 #c9a800}
+  button.secondary{background:white;box-shadow:0 6px 0 #aaa}
+  .controls{display:flex;gap:10px;margin-top:10px}
+  .controls button{flex:1;padding:16px;font-size:24px}
+  .hidden{display:none!important}
+  .shake{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .float{animation:float 2s infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .badge{display:inline-block;background:#ff4757;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>✨ PENJAGA <span>CAHAYA</span> ✨</h1>
+  <p class="sub">Tangkap kebaikan • Hindari rintangan • Kalahkan levelmu!</p>
+  <div class="hud">
+    <div class="card"><b id="score">0</b><small>SKOR</small></div>
+    <div class="card"><b id="level">1</b><small>LEVEL</small></div>
+    <div class="card"><b id="lives">❤️❤️❤️</b><small>NYAWA</small></div>
+    <div class="card"><b id="best">0</b><small>TERBAIK</small></div>
+  </div>
+  <div id="game">
+    <div id="player">🧕</div>
+    <div id="overlay">
+      <div class="float" style="font-size:60px">🌟</div>
+      <h2>Siap Menjaga<br>Cahaya?</h2>
+      <p>Tangkap <b>⭐ 💖 📖</b> untuk skor.<br>Hindari <b>💣 👾</b> biar nyawa aman.<br>Setiap 150 poin = naik level & makin cepat!</p>
+      <button onclick="startGame()">▶ MULAI MAIN</button>
+      <small>Gerak pakai mouse, sentuhan, atau tombol ◀ ▶</small>
+    </div>
+  </div>
+  <div class="controls">
+    <button onclick="move(-40)">◀</button>
+    <button onclick="move(40)">▶</button>
+  </div>
+  <p style="font-size:12px;opacity:.7;margin-top:8px">Tip: Tangkap 5 item berturut-turut tanpa kena bom = Bonus +50! 🔥</p>
+</div>
+
+<script>
+let score=0, lives=3, level=1, best=localStorage.getItem('cahaya_best')||0;
+let playing=false, playerX=50, combo=0, speed=2.2, spawnTimer=null, loopTimer=null;
+const game=document.getElementById('game'), player=document.getElementById('player'), overlay=document.getElementById('overlay');
+document.getElementById('best').textContent=best;
+
+function beep(f=600,d=.08,type='sine'){try{const c=new (window.AudioContext||window.webkitAudioContext)();let o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.value=.12;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('level').textContent=level;
+  document.getElementById('lives').textContent='❤️'.repeat(Math.max(0,lives))||'💔';
+}
+function move(dx){
+  playerX=Math.max(6,Math.min(94,playerX+dx/4.5));
+  player.style.left=playerX+'%';
+}
+game.addEventListener('mousemove',e=>{let r=game.getBoundingClientRect();playerX=((e.clientX-r.left)/r.width)*100;move(0)});
+game.addEventListener('touchmove',e=>{e.preventDefault();let r=game.getBoundingClientRect();playerX=((e.touches[0].clientX-r.left)/r.width)*100;move(0)},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-35);if(e.key==='ArrowRight')move(35);if(e.key==='Enter'&&!playing)startGame()});
+
+function spawn(){
+  if(!playing) return;
+  const good=['⭐','💖','📖','🌙','🍎'];
+  const bad=['💣','👾','🌩️'];
+  const isBad=Math.random()<0.28;
+  const el=document.createElement('div');
+  el.className='item';
+  el.textContent=isBad?bad[Math.floor(Math.random()*bad.length)]:good[Math.floor(Math.random()*good.length)];
+  el.dataset.bad=isBad;
+  el.style.left=Math.random()*88+'%';
+  el.style.top='-40px';
+  game.appendChild(el);
+  let y=-40;
+  let fall=setInterval(()=>{
+    if(!playing){clearInterval(fall);el.remove();return}
+    y+=speed; el.style.top=y+'px';
+    let pr=player.getBoundingClientRect(), er=el.getBoundingClientRect(), gr=game.getBoundingClientRect();
+    if(er.bottom>pr.top+8 && er.top<pr.bottom-8 && Math.abs((er.left+er.width/2)-(pr.left+pr.width/2))<45){
+      clearInterval(fall);
+      if(el.dataset.bad==='true'){
+        lives--; combo=0; beep(150,.2,'sawtooth'); game.classList.remove('shake');void game.offsetWidth;game.classList.add('shake');
+        burst(er.left-gr.left, er.top-gr.top, '#ff4757');
+        if(lives<=0) gameOver();
+      } else {
+        score+=10; combo++; beep(800,.08); beep(1000,.08);
+        burst(er.left-gr.left, er.top-gr.top, '#ffdd59');
+        if(combo>=5){score+=50; combo=0; beep(1200,.15); alert('🔥 KOMBO! Bonus +50!')}
+        if(score>=level*150){level++; speed+=0.5; beep(1200,.2); document.querySelector('h1').textContent='✨ LEVEL '+level+'! ✨'; setTimeout(()=>document.querySelector('h1').innerHTML='✨ PENJAGA <span>CAHAYA</span> ✨',1200)}
+      }
+      el.remove(); updateHUD();
+    }
+    if(y>540){clearInterval(fall); el.remove();}
+  },16);
+}
+function burst(x,y,color){
+  for(let i=0;i<10;i++){let p=document.createElement('div');p.className='particle';p.style.background=color;p.style.left=x+'px';p.style.top=y+'px';game.appendChild(p);
+  let a=Math.random()*Math.PI*2, d=30+Math.random()*40; p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`,opacity:0}],{duration:500}).onfinish=()=>p.remove();}
+}
+function startGame(){
+  score=0; lives=3; level=1; speed=2.2; combo=0; playing=true;
+  overlay.classList.add('hidden'); updateHUD();
+  document.querySelectorAll('.item').forEach(e=>e.remove());
+  clearInterval(spawnTimer); clearInterval(loopTimer);
+  spawnTimer=setInterval(spawn, 650);
+  beep(700,.1);
+}
+function gameOver(){
+  playing=false; clearInterval(spawnTimer);
+  if(score>best){best=score; localStorage.setItem('cahaya_best',best); document.getElementById('best').textContent=best;}
+  beep(200,.4,'sawtooth');
+  overlay.classList.remove('hidden');
+  overlay.innerHTML=`<div style="font-size:56px">🌙</div><h2>Game Selesai!</h2><p>Skor kamu: <b style="font-size:22px;color:#ffdd59">${score}</b><br>Level tercapai: <b>${level}</b><br>${score>=best&&score>0?'🏆 REKOR BARU! Hebat!':'Terus semangat, coba lagi!'}</p><button onclick="startGame()">🔄 MAIN LAGI</button>`;
+}
+updateHUD();
+</script>
+</body>
+</html>

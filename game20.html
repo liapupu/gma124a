@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Balap Neon 🏎️💨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+  body{background:#0a0a1a;background:radial-gradient(circle at 50% 0%,#2d1b69,#0a0a1a 70%);min-height:100vh;display:flex;justify-content:center;padding:12px;color:white;overflow:hidden}
+  .wrap{width:100%;max-width:480px;text-align:center}
+  h1{font-size:26px;text-shadow:0 0 18px #ff4757,0 0 30px #ff4757}
+  h1 span{color:#ffdd59}
+  .sub{font-size:12px;opacity:.8;margin:4px 0 10px}
+  .hud{display:flex;gap:8px;margin-bottom:10px}
+  .hcard{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:9px;flex:1}
+  .hcard b{font-size:19px;display:block;color:#ffdd59}
+  .hcard small{font-size:10px;letter-spacing:1px;opacity:.8}
+  .bar{height:10px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-bottom:10px}
+  #fuelBar{height:100%;background:linear-gradient(90deg,#00b894,#ffdd59,#ff4757);width:100%;transition:width .3s}
+  #nitroBar{height:100%;background:linear-gradient(90deg,#ff4757,#ff6b9d,#a29bfe);width:100%;transition:width .2s}
+  #box{position:relative;width:100%;height:520px;border-radius:20px;overflow:hidden;border:3px solid #ff4757;box-shadow:0 0 30px rgba(255,71,87,.4);background:#222;touch-action:none;cursor:pointer}
+  canvas{width:100%;height:100%;display:block}
+  #overlay{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;z-index:10}
+  #overlay h2{font-size:30px;line-height:1.1}
+  #overlay p{font-size:13px;line-height:1.5;opacity:.9}
+  button{background:#ffdd59;color:#222;border:none;padding:13px 22px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 5px 0 #c9a800}
+  button:active{transform:translateY(3px);box-shadow:0 2px 0 #c9a800}
+  button.white{background:white;box-shadow:0 5px 0 #aaa}
+  button.red{background:#ff4757;color:white;box-shadow:0 5px 0 #c0392b}
+  .hidden{display:none!important}
+  .float{animation:floatY 2s infinite}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controls button{padding:16px;font-size:22px;background:rgba(255,255,255,.12);color:white;box-shadow:0 4px 0 rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3)}
+  .controls button.nitro{background:#ff4757;box-shadow:0 4px 0 #c0392b}
+  .modes{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+  .modes button{padding:9px 12px;font-size:12px;background:rgba(255,255,255,.12);color:white;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .modes button.active{background:#ffdd59;color:#222}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏎️ BALAP <span>NEON</span> 💨</h1>
+  <p class="sub">Salip • Ngebut • Jangan nabrak! Seberapa jauh kamu bisa?</p>
+
+  <div class="modes">
+    <button id="m1" class="active" onclick="setMode(1)">🐢 Santai</button>
+    <button id="m2" onclick="setMode(2)">⚡ Cepat</button>
+    <button id="m3" onclick="setMode(3)">🔥 Gila</button>
+  </div>
+
+  <div class="hud">
+    <div class="hcard"><b id="score">0</b><small>SKOR</small></div>
+    <div class="hcard"><b id="dist">0m</b><small>JARAK</small></div>
+    <div class="hcard"><b id="coins">🪙 0</b><small>KOIN</small></div>
+    <div class="hcard"><b id="best">0</b><small>TERBAIK</small></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;font-size:11px;margin-bottom:4px"><span>⛽ BENSIN</span><div class="bar" style="flex:1;margin:0"><div id="fuelBar"></div></div><span id="speedText">0 km/h</span></div>
+  <div style="display:flex;gap:8px;align-items:center;font-size:11px;margin-bottom:10px"><span>🔥 NITRO</span><div class="bar" style="flex:1;margin:0"><div id="nitroBar"></div></div><span>Tekan & Tahan</span></div>
+
+  <div id="box">
+    <canvas id="game" width="460" height="520"></canvas>
+    <div id="overlay">
+      <div class="float" style="font-size:58px">🏎️💨</div>
+      <h2>Siap Ngebut?</h2>
+      <p>Belok pakai <b>◀ ▶ / A D / Geser</b><br>Nitro pakai <b>🔥 / Spasi / Panah Atas</b><br>Ambil 🪙 +20 & ⛽ isi bensin<br>Nabrak = Game Over!</p>
+      <button onclick="startGame()">▶ MULAI BALAP</button>
+      <small>Best: <span id="bestText">0</span> • Semangat, pembalap!</small>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="steer(-1)">◀</button>
+    <button class="nitro" onpointerdown="nitroOn()" onpointerup="nitroOff()" onpointerleave="nitroOff()">🔥 NITRO</button>
+    <button onclick="steer(1)">▶</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="white" style="flex:1" onclick="togglePause()">⏸ Jeda</button>
+    <button class="red" style="flex:1" onclick="startGame()">🔄 Ulang</button>
+  </div>
+  <p style="font-size:11px;opacity:.7;margin-top:8px">💡 Tip: Salip mobil dari dekat dapat bonus +30! Bensin habis = mogok!</p>
+</div>
+
+<script>
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+let score=0, dist=0, coins=0, best=localStorage.getItem('balap_best')||0;
+let playing=false, paused=false, mode=1, speed=0, targetSpeed=6, nitro=false, nitroVal=100, fuel=100;
+let player={x:230,y:400,w:44,h:72,tilt:0};
+let enemies=[], pickups=[], lines=[], particles=[], frame=0, nearMissCooldown=0;
+document.getElementById('best').textContent=best;
+document.getElementById('bestText').textContent=best;
+
+function beep(f=400,d=.07,type='sawtooth'){try{let c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.value=.05;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function setMode(m){mode=m; document.querySelectorAll('.modes button').forEach(b=>b.classList.remove('active')); document.getElementById('m'+m).classList.add('active'); startGame();}
+function steer(d){ if(!playing||paused) return; player.x+=d*28; player.tilt=d*0.18; setTimeout(()=>player.tilt=0,150); beep(700,.04,'sine'); }
+function nitroOn(){ if(!playing) return; nitro=true; }
+function nitroOff(){ nitro=false; }
+function togglePause(){ if(!playing) return; paused=!paused; if(!paused) requestAnimationFrame(loop); }
+function startGame(){
+  score=0; dist=0; coins=0; speed=0; nitroVal=100; fuel=100; frame=0;
+  player.x=230; player.tilt=0;
+  enemies=[]; pickups=[]; particles=[]; playing=true; paused=false;
+  document.getElementById('overlay').classList.add('hidden');
+  updateHUD(); beep(800,.15,'sine');
+  requestAnimationFrame(loop);
+}
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('dist').textContent=Math.floor(dist)+'m';
+  document.getElementById('coins').textContent='🪙 '+coins;
+  document.getElementById('fuelBar').style.width=fuel+'%';
+  document.getElementById('nitroBar').style.width=nitroVal+'%';
+  document.getElementById('speedText').textContent=Math.floor(speed*18)+' km/h';
+}
+function spawnEnemy(){
+  let lanes=[70,155,240,325,395];
+  let lane=lanes[Math.floor(Math.random()*lanes.length)];
+  let colors=['#ff4757','#4facfe','#ffdd59','#a29bfe','#00b894','#ff6b9d'];
+  enemies.push({x:lane,y:-90,w:44,h:72,speed:2+Math.random()*2,color:colors[Math.floor(Math.random()*colors.length)],emoji:Math.random()<.5?'🚗':'🚙'});
+}
+function spawnPickup(){
+  let lanes=[70,155,240,325,395];
+  let lane=lanes[Math.floor(Math.random()*lanes.length)];
+  let r=Math.random();
+  let type = r<0.6 ? {emoji:'🪙',kind:'coin'} : r<0.85 ? {emoji:'⛽',kind:'fuel'} : {emoji:'🔥',kind:'nitro'};
+  pickups.push({x:lane,y:-60,...type});
+}
+function gameOver(reason){
+  playing=false; beep(150,.4);
+  if(score>best){best=score; localStorage.setItem('balap_best',best); document.getElementById('best').textContent=best;}
+  let ov=document.getElementById('overlay'); ov.classList.remove('hidden');
+  ov.innerHTML=`<div style="font-size:56px">💥🏎️</div><h2>${reason==='fuel'?'Bensin Habis!':'Kecelakaan!'}</h2><p>Jarak: <b>${Math.floor(dist)}m</b> • Koin: <b>${coins}</b><br>Kecepatan max: <b>${Math.floor((mode===1?9:mode===2?12:15)*18)} km/h</b><br>Skor Akhir: <b style="font-size:24px;color:#ffdd59">${score}</b><br>${score>=best&&score>0?'🏆 REKOR BARU! Pembalap Hebat!':'Yuk coba lagi, pasti lebih jauh!'}</p><button onclick="startGame()">🔄 BALAP LAGI</button>`;
+}
+function draw(){
+  // rumput / pinggir
+  ctx.fillStyle='#1a5c2a'; ctx.fillRect(0,0,40,520); ctx.fillRect(420,0,40,520);
+  // jalan
+  ctx.fillStyle='#2d3436'; ctx.fillRect(40,0,380,520);
+  ctx.fillStyle='#636e72'; ctx.fillRect(40,0,6,520); ctx.fillRect(414,0,6,520);
+  // garis jalan bergerak
+  ctx.fillStyle='#ffdd59';
+  for(let y=0;y<520;y+=70){
+    let yy=(y+frame*2)%590-70;
+    ctx.fillRect(118,yy,6,34); ctx.fillRect(203,yy,6,34); ctx.fillRect(288,yy,6,34); ctx.fillRect(373,yy,6,34);
+  }
+  // pinggir neon
+  ctx.fillStyle='#ff4757'; ctx.fillRect(40,0,3,520); ctx.fillRect(417,0,3,520);
+  // pickups
+  ctx.font='28px serif'; ctx.textAlign='center';
+  pickups.forEach(p=>{ ctx.save(); ctx.shadowColor='#ffdd59'; ctx.shadowBlur=12; ctx.fillText(p.emoji,p.x,p.y); ctx.restore(); });
+  // musuh
+  enemies.forEach(e=>{
+    ctx.save(); ctx.translate(e.x,e.y); ctx.shadowColor=e.color; ctx.shadowBlur=10;
+    ctx.fillStyle=e.color; ctx.fillRect(-22,-36,44,72);
+    ctx.fillStyle='#222'; ctx.fillRect(-22,-10,10,18); ctx.fillRect(12,-10,10,18); ctx.fillRect(-22,18,10,18); ctx.fillRect(12,18,10,18);
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(-16,-18,32,18);
+    ctx.font='28px serif'; ctx.fillText(e.emoji,0,8); ctx.restore();
+  });
+  // player
+  ctx.save(); ctx.translate(player.x,player.y); ctx.rotate(player.tilt);
+  ctx.shadowColor='#ff4757'; ctx.shadowBlur=18;
+  ctx.fillStyle='#ff4757'; ctx.fillRect(-22,-36,44,72);
+  ctx.fillStyle='#222'; ctx.fillRect(-22,-10,10,18); ctx.fillRect(12,-10,10,18); ctx.fillRect(-22,18,10,18); ctx.fillRect(12,18,10,18);
+  ctx.fillStyle='#ffeaa7'; ctx.fillRect(-16,22,32,10);
+  ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(-16,-18,32,18);
+  ctx.font='30px serif'; ctx.fillText('🏎️',0,10);
+  // api nitro
+  if(nitro && nitroVal>0){ ctx.fillStyle='#ff9f43'; ctx.beginPath(); ctx.moveTo(-14,36); ctx.lineTo(0,70+Math.random()*20); ctx.lineTo(14,36); ctx.fill(); ctx.fillStyle='#ffdd59'; ctx.beginPath(); ctx.moveTo(-8,36); ctx.lineTo(0,58); ctx.lineTo(8,36); ctx.fill(); }
+  ctx.restore();
+  // particles
+  particles.forEach(p=>{ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,5,5);});
+  // vignette kecepatan
+  if(speed>10){ ctx.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<5;i++){ let y=Math.random()*520; ctx.fillRect(40,y,380,2); } }
+}
+function loop(){
+  if(!playing||paused) return;
+  frame++;
+  let baseMax = mode===1?9 : mode===2?12 : 15;
+  let target = nitro && nitroVal>0 ? baseMax+4 : baseMax;
+  if(nitro && nitroVal>0){ nitroVal=Math.max(0,nitroVal-0.6); beep(1200,.02,'sawtooth'); }
+  else nitroVal=Math.min(100,nitroVal+0.15);
+  speed += (target-speed)*0.04;
+  dist += speed*0.25; score+=1;
+  fuel=Math.max(0,fuel-0.03 - (nitro?0.05:0));
+  if(fuel<=0){ gameOver('fuel'); return; }
+  // batas jalan
+  player.x=Math.max(68,Math.min(392,player.x));
+  // spawn
+  if(frame%Math.max(28,55-speed*2)===0) spawnEnemy();
+  if(frame%45===0) spawnPickup();
+  // gerak musuh & pickup
+  enemies.forEach(e=>e.y+=speed*0.7+e.speed);
+  pickups.forEach(p=>p.y+=speed);
+  // collision musuh
+  for(let e of enemies){
+    if(Math.abs(e.x-player.x)<38 && Math.abs(e.y-player.y)<62){ gameOver('crash'); return; }
+    // near miss bonus
+    if(Math.abs(e.x-player.x)<60 && Math.abs(e.x-player.x)>=38 && Math.abs(e.y-player.y)<10 && nearMissCooldown<=0){
+      score+=30; nearMissCooldown=40; beep(1100,.1,'sine');
+    }
+  }
+  if(nearMissCooldown>0) nearMissCooldown--;
+  // collision pickup
+  pickups.forEach((p,idx)=>{
+    if(Math.abs(p.x-player.x)<34 && Math.abs(p.y-player.y)<48){
+      if(p.kind==='coin'){ coins++; score+=20; beep(1000,.08,'sine'); }
+      if(p.kind==='fuel'){ fuel=Math.min(100,fuel+35); score+=10; beep(800,.08); }
+      if(p.kind==='nitro'){ nitroVal=100; score+=15; beep(1300,.1); }
+      for(let i=0;i<8;i++) particles.push({x:p.x,y:p.y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,life:18,color:'#ffdd59'});
+      pickups.splice(idx,1);
+    }
+  });
+  enemies=enemies.filter(e=>e.y<600);
+  pickups=pickups.filter(p=>p.y<600);
+  particles.forEach(p=>{p.x+=p.vx; p.y+=p.vy; p.life--}); particles=particles.filter(p=>p.life>0);
+  if(frame%4===0) updateHUD();
+  draw();
+  requestAnimationFrame(loop);
+}
+// kontrol keyboard
+let keys={};
+document.addEventListener('keydown',e=>{
+  if(e.code==='ArrowLeft'||e.code==='KeyA'){ player.x-=14; player.tilt=-0.18; setTimeout(()=>player.tilt=0,120); }
+  if(e.code==='ArrowRight'||e.code==='KeyD'){ player.x+=14; player.tilt=0.18; setTimeout(()=>player.tilt=0,120); }
+  if(e.code==='ArrowUp'||e.code==='Space'){ e.preventDefault(); if(!playing) startGame(); else nitro=true; }
+  if(e.code==='KeyP') togglePause();
+});
+document.addEventListener('keyup',e=>{ if(e.code==='ArrowUp'||e.code==='Space') nitro=false; });
+// geser / sentuh
+let lastX=0;
+document.getElementById('box').addEventListener('touchstart',e=>{ lastX=e.touches[0].clientX; if(!playing) startGame(); },{passive:true});
+document.getElementById('box').addEventListener('touchmove',e=>{
+  e.preventDefault();
+  let x=e.touches[0].clientX, dx=x-lastX;
+  player.x+=dx*0.9; player.tilt=Math.max(-0.25,Math.min(0.25,dx*0.01));
+  lastX=x;
+},{passive:false});
+document.getElementById('box').addEventListener('touchend',()=>{ player.tilt=0; nitro=false; },{passive:true});
+draw();
+</script>
+</body>
+</html>

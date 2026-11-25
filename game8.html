@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Fruit Catcher Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1f4068, #162447);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 440px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ff87, #60efff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00ff87;
+        }
+
+        canvas {
+            background-color: #0b0f19;
+            border: 2px solid #00ff87;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 135, 0.3);
+            display: block;
+            margin: 0 auto 15px auto;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 176, 155, 0.6);
+        }
+
+        .instructions {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Fruit Catcher</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <div class="score-box">Nyawa: <span id="lives">3</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="400" height="450"></canvas>
+
+        <button class="btn" id="startBtn">Mulai Game</button>
+
+        <div class="instructions">
+            Gunakan **Tombol Panah Kiri/Kanan** atau **Geser Mouse/Sentuh** untuk menggerakkan keranjang.
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const livesElement = document.getElementById("lives");
+        const startBtn = document.getElementById("startBtn");
+
+        let score = 0;
+        let lives = 3;
+        let isPlaying = false;
+        let animationId = null;
+
+        // Karakter Keranjang
+        const basket = {
+            width: 70,
+            height: 20,
+            x: canvas.width / 2 - 35,
+            y: canvas.height - 30,
+            speed: 8
+        };
+
+        // Buah yang jatuh
+        let fruits = [];
+        let fruitTimer = 0;
+        const fruitTypes = [
+            { emoji: '🍎', color: '#ff3366', points: 10 },
+            { emoji: '🍌', color: '#ffeb3b', points: 15 },
+            { emoji: '🍇', color: '#ab47bc', points: 20 },
+            { emoji: '🍉', color: '#26a69a', points: 25 }
+        ];
+
+        // Kontrol Keyboard
+        let rightPressed = false;
+        let leftPressed = false;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight" || e.key === "d") rightPressed = true;
+            if (e.key === "ArrowLeft" || e.key === "a") leftPressed = true;
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowRight" || e.key === "d") rightPressed = false;
+            if (e.key === "ArrowLeft" || e.key === "a") leftPressed = false;
+        });
+
+        // Kontrol Mouse / Sentuh
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            basket.x = mouseX - basket.width / 2;
+            if (basket.x < 0) basket.x = 0;
+            if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            basket.x = touchX - basket.width / 2;
+            if (basket.x < 0) basket.x = 0;
+            if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
+        }, { passive: true });
+
+        function spawnFruit() {
+            const randomType = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
+            const randomX = Math.random() * (canvas.width - 30);
+            fruits.push({
+                x: randomX,
+                y: -20,
+                size: 24,
+                speed: 2 + Math.random() * 2,
+                ...randomType
+            });
+        }
+
+        function update() {
+            // Pergerakan keranjang via keyboard
+            if (rightPressed && basket.x < canvas.width - basket.width) {
+                basket.x += basket.speed;
+            } else if (leftPressed && basket.x > 0) {
+                basket.x -= basket.speed;
+            }
+
+            // Munculkan buah berkala
+            fruitTimer++;
+            if (fruitTimer % 50 === 0) {
+                spawnFruit();
+            }
+
+            // Pergerakan buah
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                fruits[i].y += fruits[i].speed;
+
+                // Cek tangkapan keranjang
+                if (
+                    fruits[i].y + fruits[i].size >= basket.y &&
+                    fruits[i].x + fruits[i].size >= basket.x &&
+                    fruits[i].x <= basket.x + basket.width
+                ) {
+                    score += fruits[i].points;
+                    scoreElement.innerText = score;
+                    fruits.splice(i, 1);
+                    continue;
+                }
+
+                // Cek jika buah jatuh ke bawah (hilang nyawa)
+                if (fruits[i].y > canvas.height) {
+                    lives--;
+                    livesElement.innerText = lives;
+                    fruits.splice(i, 1);
+
+                    if (lives <= 0) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            // Bersihkan layar
+            ctx.fillStyle = "#0b0f19";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Keranjang
+            ctx.fillStyle = "#00ff87";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#00ff87";
+            ctx.beginPath();
+            ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 8);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Gambar Buah-buahan
+            fruits.forEach(fruit => {
+                ctx.font = "24px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(fruit.emoji, fruit.x + 12, fruit.y + 20);
+            });
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0;
+            lives = 3;
+            scoreElement.innerText = score;
+            livesElement.innerText = lives;
+            fruits = [];
+            isPlaying = true;
+            startBtn.style.display = "none";
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            startBtn.style.display = "inline-block";
+            startBtn.innerText = "Main Lagi";
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 24px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+            ctx.font = "16px Segoe UI";
+            ctx.fillStyle = "#ccc";
+            ctx.fillText("Skor Akhir: " + score, canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        startBtn.addEventListener("click", startGame);
+
+        // Tampilan awal canvas
+        ctx.fillStyle = "#0b0f19";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Tekan 'Mulai Game'", canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

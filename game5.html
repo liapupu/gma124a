@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Memory Card Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1f4068, #162447, #1b1b2f);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #e43a15, #e65245);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #ffcc00;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: #2a2a40;
+            border: 2px solid #e43a15;
+            border-radius: 8px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease, background-color 0.2s;
+            user-select: none;
+        }
+
+        .card.flipped {
+            background-color: #ffffff;
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            border-color: #00ffcc;
+            background-color: rgba(0, 255, 204, 0.2);
+            cursor: default;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #e43a15, #e65245);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(228, 58, 21, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(228, 58, 21, 0.6);
+        }
+
+        .instructions {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Memory Match</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Langkah: <span id="moves">0</span></div>
+            <div class="score-box">Sisa Pasangan: <span id="pairs">8</span></div>
+        </div>
+
+        <div class="grid" id="gameGrid"></div>
+
+        <button class="btn" id="restartBtn">Mulai Ulang</button>
+
+        <div class="instructions">
+            Klik kartu untuk membalik dan temukan 8 pasang emoji yang sama!
+        </div>
+    </div>
+
+    <script>
+        const emojis = ['🚀', '🚀', '💻', '💻', '🔥', '🔥', '⭐', '⭐', '🎧', '🎧', '⚡', '⚡', '🎮', '🎮', '💎', '💎'];
+        const gridElement = document.getElementById("gameGrid");
+        const movesElement = document.getElementById("moves");
+        const pairsElement = document.getElementById("pairs");
+        const restartBtn = document.getElementById("restartBtn");
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let isLocked = false;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initGame() {
+            gridElement.innerHTML = "";
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            isLocked = false;
+            movesElement.innerText = moves;
+            pairsElement.innerText = emojis.length / 2;
+
+            const shuffledEmojis = shuffle([...emojis]);
+
+            shuffledEmojis.forEach((emoji, index) => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.addEventListener("click", flipCard);
+                gridElement.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (isLocked) return;
+            if (this.classList.contains("flipped") || this.classList.contains("matched")) return;
+
+            this.classList.add("flipped");
+            this.innerText = this.dataset.emoji;
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                moves++;
+                movesElement.innerText = moves;
+                checkForMatch();
+            }
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.emoji === card2.dataset.emoji;
+
+            if (isMatch) {
+                card1.classList.add("matched");
+                card2.classList.add("matched");
+                matchedPairs++;
+                pairsElement.innerText = (emojis.length / 2) - matchedPairs;
+                flippedCards = [];
+
+                if (matchedPairs === emojis.length / 2) {
+                    setTimeout(() => {
+                        alert(`Hebat! Kamu berhasil menyelesaikan game dalam ${moves} langkah.`);
+                    }, 300);
+                }
+            } else {
+                isLocked = true;
+                setTimeout(() => {
+                    card1.classList.remove("flipped");
+                    card2.classList.remove("flipped");
+                    card1.innerText = "";
+                    card2.innerText = "";
+                    flippedCards = [];
+                    isLocked = false;
+                }, 800);
+            }
+        }
+
+        restartBtn.addEventListener("click", initGame);
+
+        // Jalankan game saat pertama kali dimuat
+        initGame();
+    </script>
+</body>
+</html>

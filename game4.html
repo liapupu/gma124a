@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Tic-Tac-Toe vs AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #00c6ff;
+            font-weight: bold;
+            min-height: 25px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 198, 255, 0.3);
+            border-radius: 10px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cell:hover {
+            background: rgba(0, 198, 255, 0.15);
+            border-color: #00c6ff;
+            box-shadow: 0 0 10px rgba(0, 198, 255, 0.4);
+        }
+
+        .cell.x {
+            color: #ff007f;
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
+        }
+
+        .cell.o {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 114, 255, 0.6);
+        }
+
+        .instructions {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Tic-Tac-Toe</h1>
+        <div class="status" id="status">Giliran Anda (X)</div>
+
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <button class="btn" id="restartBtn">Mulai Ulang</button>
+
+        <div class="instructions">
+            Anda bermain sebagai **X** (Merah Muda) melawan Komputer **O** (Tosca).
+        </div>
+    </div>
+
+    <script>
+        const boardElement = document.getElementById("board");
+        const statusElement = document.getElementById("status");
+        const restartBtn = document.getElementById("restartBtn");
+        const cells = document.querySelectorAll(".cell");
+
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let isGameActive = true;
+        let currentPlayer = "X"; // X = Pemain, O = Komputer
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Baris
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolom
+            [0, 4, 8], [2, 4, 6]            // Diagonal
+        ];
+
+        cells.forEach(cell => {
+            cell.addEventListener("click", handleCellClick);
+        });
+
+        restartBtn.addEventListener("click", restartGame);
+
+        function handleCellClick(e) {
+            const index = e.target.getAttribute("data-index");
+
+            if (board[index] !== "" || !isGameActive || currentPlayer !== "X") return;
+
+            makeMove(index, "X");
+
+            if (checkWin("X")) {
+                statusElement.innerText = "Selamat, Anda Menang! 🎉";
+                isGameActive = false;
+                return;
+            }
+
+            if (board.every(cell => cell !== "")) {
+                statusElement.innerText = "Permainan Seri! 🤝";
+                isGameActive = false;
+                return;
+            }
+
+            // Giliran Komputer (AI)
+            currentPlayer = "O";
+            statusElement.innerText = "Giliran Komputer Berpikir...";
+            setTimeout(aiMove, 500);
+        }
+
+        function makeMove(index, player) {
+            board[index] = player;
+            cells[index].innerText = player;
+            cells[index].classList.add(player.toLowerCase());
+        }
+
+        function aiMove() {
+            if (!isGameActive) return;
+
+            // Cari langkah kosong secara acak (bisa dikembangkan jadi minimax jika ingin lebih pintar)
+            let emptyCells = [];
+            board.forEach((val, idx) => {
+                if (val === "") emptyCells.push(idx);
+            });
+
+            if (emptyCells.length > 0) {
+                // AI Pintar: Cek apakah AI bisa menang dalam 1 langkah, atau blok pemain X
+                let move = findBestMove("O");
+                if (move === null) move = findBestMove("X");
+                if (move === null) move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+                makeMove(move, "O");
+
+                if (checkWin("O")) {
+                    statusElement.innerText = "Komputer Menang! 🤖";
+                    isGameActive = false;
+                    return;
+                }
+
+                if (board.every(cell => cell !== "")) {
+                    statusElement.innerText = "Permainan Seri! 🤝";
+                    isGameActive = false;
+                    return;
+                }
+            }
+
+            currentPlayer = "X";
+            statusElement.innerText = "Giliran Anda (X)";
+        }
+
+        function findBestMove(player) {
+            for (let condition of winningConditions) {
+                let [a, b, c] = condition;
+                let vals = [board[a], board[b], board[c]];
+                if (vals.filter(v => v === player).length === 2 && vals.includes("")) {
+                    if (board[a] === "") return a;
+                    if (board[b] === "") return b;
+                    if (board[c] === "") return c;
+                }
+            }
+            return null;
+        }
+
+        function checkWin(player) {
+            return winningConditions.some(condition => {
+                return condition.every(index => board[index] === player);
+            });
+        }
+
+        function restartGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            isGameActive = true;
+            currentPlayer = "X";
+            statusElement.innerText = "Giliran Anda (X)";
+            cells.forEach(cell => {
+                cell.innerText = "";
+                cell.classList.remove("x", "o");
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dapur Cahaya 👩‍🍳🔥</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+  body{background:linear-gradient(180deg,#ff9a9e,#fecfef,#ffecd2);min-height:100vh;display:flex;justify-content:center;padding:12px;color:#333}
+  .wrap{width:100%;max-width:560px;text-align:center}
+  h1{font-size:26px;text-shadow:0 2px 0 #fff}
+  h1 span{color:#e17055}
+  .sub{font-size:12px;opacity:.8;margin:4px 0 10px}
+  .hud{display:flex;gap:8px;margin-bottom:10px}
+  .hcard{background:white;border-radius:14px;padding:9px;flex:1;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+  .hcard b{font-size:19px;display:block;color:#e17055}
+  .hcard small{font-size:10px;letter-spacing:1px;opacity:.7}
+  .bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin-bottom:10px}
+  #timeBar{height:100%;background:linear-gradient(90deg,#00b894,#fdcb6e,#ff4757);width:100%;transition:width 1s linear}
+  /* pelanggan */
+  #customers{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+  .cust{background:white;border-radius:18px;padding:10px 8px;width:32%;box-shadow:0 4px 12px rgba(0,0,0,.1);position:relative;border:3px solid transparent;transition:.2s}
+  .cust.active{border-color:#fdcb6e;transform:scale(1.03);box-shadow:0 0 0 3px #fdcb6e,0 6px 14px rgba(0,0,0,.15)}
+  .cust .face{font-size:34px}
+  .cust .mood{font-size:11px;margin:3px 0}
+  .cust .order{font-size:22px;background:#fff3cd;border-radius:10px;padding:4px;margin:4px 0}
+  .cust .orderName{font-size:11px;font-weight:800}
+  .cust .patience{height:6px;background:#eee;border-radius:99px;overflow:hidden;margin-top:6px}
+  .cust .patience i{display:block;height:100%;background:#00b894;transition:width .5s}
+  .cust.angry .patience i{background:#ff4757}
+  .cust.done{opacity:.6;border-color:#00b894}
+  /* dapur */
+  #kitchen{background:white;border-radius:20px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.12);position:relative;overflow:hidden}
+  #kitchen h3{font-size:14px;margin-bottom:4px}
+  #plate{font-size:64px;min-height:82px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;background:#fff8e1;border-radius:16px;margin:8px 0;border:2px dashed #fdcb6e;position:relative}
+  #plate.cooking{animation:shake .3s infinite}
+  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-1deg)}75%{transform:rotate(1deg)}}
+  #plateText{position:absolute;bottom:4px;right:8px;font-size:11px;background:#333;color:white;padding:3px 8px;border-radius:99px}
+  #cookBar{height:10px;background:#eee;border-radius:99px;overflow:hidden;display:none;margin:6px 0}
+  #cookBar i{display:block;height:100%;background:linear-gradient(90deg,#ff7675,#fdcb6e);width:0%}
+  .section{margin-top:10px;text-align:left}
+  .section b{font-size:12px;letter-spacing:1px;opacity:.7}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .ing{background:#f8f9fa;border:2px solid #eee;border-radius:14px;padding:10px 4px;cursor:pointer;font-size:26px;transition:.15s;position:relative}
+  .ing small{display:block;font-size:10px;font-weight:700;margin-top:2px}
+  .ing:active{transform:scale(.92)}
+  .ing.selected{border-color:#00b894;background:#dfe6e9;box-shadow:0 0 0 3px #00b894}
+  .ing.used{opacity:.4;pointer-events:none}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .actions button{flex:1;padding:14px;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer}
+  .btn-cook{background:#ff7675;color:white;box-shadow:0 5px 0 #d63031}
+  .btn-serve{background:#00b894;color:white;box-shadow:0 5px 0 #00947a}
+  .btn-trash{background:#dfe6e9;color:#333;box-shadow:0 5px 0 #b2bec3}
+  .actions button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .actions button:disabled{opacity:.5}
+  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:99}
+  .modal{background:white;border-radius:22px;padding:24px 20px;max-width:380px;width:100%;text-align:center}
+  .modal h2{font-size:28px;line-height:1.1;margin:8px 0}
+  .modal p{font-size:13px;line-height:1.6;opacity:.85;margin-bottom:14px}
+  button.big{background:#e17055;color:white;border:none;padding:13px 22px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 5px 0 #a94e35;width:100%}
+  .hidden{display:none!important}
+  .float{animation:floatY 2s infinite}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 16px;border-radius:999px;font-weight:800;font-size:13px;z-index:100;box-shadow:0 6px 14px rgba(0,0,0,.3);display:none}
+  .menuBook{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .menuBook span{background:white;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>👩‍🍳 DAPUR <span>CAHAYA</span> 🔥</h1>
+  <p class="sub">Warung paling rame! Layani 3 pelanggan sekaligus, jangan sampai mereka kabur!</p>
+
+  <div class="hud">
+    <div class="hcard"><b id="score">0</b><small>SKOR</small></div>
+    <div class="hcard"><b id="served">0</b><small>DISAJIKAN</small></div>
+    <div class="hcard"><b id="tips">💰 0</b><small>TIP</small></div>
+    <div class="hcard"><b id="best">0</b><small>TERBAIK</small></div>
+  </div>
+  <div class="bar"><div id="timeBar"></div></div>
+
+  <div id="customers"></div>
+
+  <div id="kitchen">
+    <h3>🍽️ PIRING KAMU — Klik pelanggan dulu, lalu pilih bahannya!</h3>
+    <div id="plate"><span style="font-size:22px;opacity:.5">Piring masih kosong...</span><span id="plateText">Pilih Pelanggan</span></div>
+    <div id="cookBar"><i id="cookFill"></i></div>
+
+    <div class="section"><b>🥦 BAHAN-BAHAN</b>
+      <div class="grid" id="ingredients"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-trash" onclick="clearPlate()">🗑️ Buang</button>
+      <button class="btn-cook" id="cookBtn" onclick="cook()">🔥 MASAK</button>
+      <button class="btn-serve" id="serveBtn" onclick="serve()" disabled>🍽️ SAJI</button>
+    </div>
+    <div class="menuBook">
+      <span>🍚 Nasi Goreng = 🍚+🥚+🧅+🌶️</span>
+      <span>🍜 Mie = 🍜+🥚+🥕+🧅</span>
+      <span>🍔 Burger = 🍞+🥩+🧀+🥬</span>
+      <span>🥤 Es Teh = 🧋+🧊+🍋+🍯</span>
+      <span>🍕 Pizza = 🍞+🧀+🍅+🥩</span>
+      <span>🥗 Salad = 🥬+🥕+🍅+🍋</span>
+    </div>
+  </div>
+
+  <p style="font-size:11px;opacity:.7;margin-top:10px">💡 Pelanggan yang sabarnya habis akan pergi & skor -50 • Sajikan cepat = Tip +50!</p>
+</div>
+
+<div id="overlay">
+  <div class="modal">
+    <div class="float" style="font-size:58px">👩‍🍳🍚</div>
+    <h2>Selamat Datang<br>di Dapur Cahaya!</h2>
+    <p>Kamu jadi koki hari ini! Lihat pesanan pelanggan, racik bahannya, masak, lalu sajikan sebelum mereka marah.<br><b>Best Score: <span id="bestText">0</span></b><br>Waktu main: 90 detik</p>
+    <button class="big" onclick="closeOverlay();startGame()">▶ MULAI MASAK!</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const RECIPES={
+  'Nasi Goreng':{emoji:'🍚',needs:['🍚','🥚','🧅','🌶️'],price:100},
+  'Mie Goreng':{emoji:'🍜',needs:['🍜','🥚','🥕','🧅'],price:110},
+  'Burger':{emoji:'🍔',needs:['🍞','🥩','🧀','🥬'],price:120},
+  'Es Teh':{emoji:'🥤',needs:['🧋','🧊','🍋','🍯'],price:80},
+  'Pizza':{emoji:'🍕',needs:['🍞','🧀','🍅','🥩'],price:130},
+  'Salad':{emoji:'🥗',needs:['🥬','🥕','🍅','🍋'],price:90},
+};
+const ALL_ING=['🍚','🥚','🧅','🌶️','🍜','🥕','🍞','🥩','🧀','🥬','🧋','🧊','🍋','🍯','🍅'];
+const ING_NAME={'🍚':'Nasi','🥚':'Telur','🧅':'Bawang','🌶️':'Cabai','🍜':'Mie','🥕':'Wortel','🍞':'Roti','🥩':'Daging','🧀':'Keju','🥬':'Sayur','🧋':'Teh','🧊':'Es','🍋':'Lemon','🍯':'Madu','🍅':'Tomat'};
+const FACES=['🧕','👩','👨','👵','👧','🧑','👦'];
+let score=0, served=0, tips=0, best=localStorage.getItem('masak_best')||0;
+let playing=false, timeLeft=90, selectedCust=0, plate=[], cooking=false, cooked=false, customers=[], timerInt=null, patienceInt=null;
+document.getElementById('best').textContent=best;
+document.getElementById('bestText').textContent=best;
+
+function beep(f=600,d=.08){try{let c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.09;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function toast(msg,color='#333'){let t=document.getElementById('toast'); t.textContent=msg; t.style.background=color; t.style.display='block'; setTimeout(()=>t.style.display='none',1600);}
+function closeOverlay(){document.getElementById('overlay').classList.add('hidden')}
+function showOverlay(title,msg,btn){
+  let ov=document.getElementById('overlay'); ov.classList.remove('hidden');
+  ov.querySelector('.modal').innerHTML=`<div style="font-size:58px">👩‍🍳</div><h2>${title}</h2><p>${msg}</p><button class="big" onclick="closeOverlay();startGame()">${btn}</button>`;
+}
+function startGame(){
+  score=0; served=0; tips=0; timeLeft=90; plate=[]; cooking=false; cooked=false; selectedCust=0;
+  playing=true; customers=[];
+  for(let i=0;i<3;i++) newCustomer(i);
+  renderCustomers(); renderIngredients(); renderPlate(); updateHUD();
+  clearInterval(timerInt); clearInterval(patienceInt);
+  timerInt=setInterval(()=>{ timeLeft--; document.getElementById('timeBar').style.width=(timeLeft/90*100)+'%'; if(timeLeft<=10) beep(300); if(timeLeft<=0) gameOver(); },1000);
+  patienceInt=setInterval(()=>{
+    if(!playing) return;
+    customers.forEach((c,idx)=>{
+      if(c.done) return;
+      c.patience-= (2+Math.random()*2);
+      if(c.patience<=0){
+        c.done=true; c.left=true; score=Math.max(0,score-50); toast('😡 '+c.name+' pergi! -50','#ff4757'); beep(200);
+        setTimeout(()=>newCustomer(idx),800);
+      }
+    });
+    renderCustomers(); updateHUD();
+  },800);
+  beep(800);
+}
+function newCustomer(idx){
+  let names=Object.keys(RECIPES);
+  let order=names[Math.floor(Math.random()*names.length)];
+  customers[idx]={name:FACES[Math.floor(Math.random()*FACES.length)], order, patience:100, done:false, left:false, mood:'😊 Menunggu...'};
+  renderCustomers();
+}
+function renderCustomers(){
+  let wrap=document.getElementById('customers'); wrap.innerHTML='';
+  customers.forEach((c,i)=>{
+    let div=document.createElement('div');
+    div.className='cust'+(i===selectedCust?' active':'')+(c.done?' done':'')+(c.patience<35?' angry':'');
+    div.onclick=()=>{selectedCust=i; plate=[]; cooked=false; cooking=false; document.getElementById('cookBar').style.display='none'; renderCustomers(); renderPlate(); renderIngredients(); beep(600);};
+    let mood = c.done ? (c.left?'😡 Pergi!':'✅ Puas!') : c.patience<35 ? '😤 Marah!' : c.patience<70 ? '😐 Mulai bosan' : '😊 Menunggu...';
+    div.innerHTML=`<div class="face">${c.name}</div><div class="mood">${mood}</div><div class="order">${RECIPES[c.order].emoji}</div><div class="orderName">${c.order}</div><div class="patience"><i style="width:${Math.max(0,c.patience)}%"></i></div><small>${c.done?'':'Sabar: '+Math.floor(Math.max(0,c.patience))+'%'}</small>`;
+    wrap.appendChild(div);
+  });
+}
+function renderIngredients(){
+  let wrap=document.getElementById('ingredients'); wrap.innerHTML='';
+  ALL_ING.forEach(em=>{
+    let b=document.createElement('div'); b.className='ing'+(plate.includes(em)?' selected':'');
+    b.innerHTML=`${em}<small>${ING_NAME[em]}</small>`;
+    b.onclick=()=>{
+      if(!playing||cooking) return;
+      if(plate.includes(em)){ plate=plate.filter(x=>x!==em); }
+      else { if(plate.length>=4){ toast('Piring penuh! Max 4 bahan','#ff4757'); return; } plate.push(em); beep(700); }
+      cooked=false; document.getElementById('serveBtn').disabled=true;
+      renderIngredients(); renderPlate();
+    };
+    wrap.appendChild(b);
+  });
+}
+function renderPlate(){
+  let p=document.getElementById('plate');
+  let cust=customers[selectedCust];
+  document.getElementById('plateText').textContent = cust ? 'Untuk: '+cust.name+' • '+cust.order : 'Pilih Pelanggan';
+  if(cooking){ p.innerHTML='🔥🍳🔥<span id="plateText">Memasak...</span>'; p.classList.add('cooking'); return; }
+  p.classList.remove('cooking');
+  if(plate.length===0) p.innerHTML='<span style="font-size:22px;opacity:.5">Piring masih kosong...</span><span id="plateText">Untuk: '+(cust?cust.order:'-')+'</span>';
+  else p.innerHTML=plate.map(e=>`<span>${e}</span>`).join('')+`<span id="plateText">${cooked?'✅ Siap Disajikan!':'Bahan: '+plate.length+'/4'}</span>`;
+}
+function clearPlate(){ if(cooking) return; plate=[]; cooked=false; document.getElementById('serveBtn').disabled=true; renderIngredients(); renderPlate(); beep(400); }
+function cook(){
+  if(!playing||plate.length===0||cooking) { if(plate.length===0) toast('Pilih bahan dulu!','#ff4757'); return; }
+  cooking=true; renderPlate();
+  document.getElementById('cookBar').style.display='block';
+  let prog=0;
+  beep(500);
+  let iv=setInterval(()=>{
+    prog+=12; document.getElementById('cookFill').style.width=prog+'%';
+    if(prog>=100){ clearInterval(iv); cooking=false; cooked=true; document.getElementById('cookBar').style.display='none'; document.getElementById('serveBtn').disabled=false; renderPlate(); beep(1000); toast('✅ Masakan matang! Cepat sajikan!','#00b894'); }
+  },120);
+}
+function serve(){
+  if(!playing||!cooked) return;
+  let cust=customers[selectedCust];
+  if(!cust||cust.done){ toast('Pelanggan ini sudah pergi / sudah dilayani!','#ff4757'); return; }
+  let need=[...RECIPES[cust.order].needs].sort();
+  let got=[...plate].sort();
+  let correct = JSON.stringify(need)===JSON.stringify(got);
+  if(correct){
+    let base=RECIPES[cust.order].price;
+    let tipBonus = cust.patience>70 ? 50 : cust.patience>40 ? 20 : 0;
+    score+=base+tipBonus; tips+=tipBonus; served++;
+    toast(`🎉 Benar! +${base} ${tipBonus?'+ Tip '+tipBonus:''}`,'#00b894'); beep(900); setTimeout(()=>beep(1200),100);
+    cust.done=true; cust.mood='✅ Puas!';
+    setTimeout(()=>newCustomer(selectedCust),900);
+  } else {
+    score=Math.max(0,score-20); cust.patience-=25;
+    toast(`❌ Salah! Yang benar: ${need.join(' ')} • -20`,'#ff4757'); beep(200);
+  }
+  plate=[]; cooked=false; document.getElementById('serveBtn').disabled=true;
+  renderCustomers(); renderIngredients(); renderPlate(); updateHUD();
+}
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('served').textContent=served;
+  document.getElementById('tips').textContent='💰 '+tips;
+  document.getElementById('timeBar').style.width=(timeLeft/90*100)+'%';
+}
+function gameOver(){
+  playing=false; clearInterval(timerInt); clearInterval(patienceInt);
+  if(score>best){best=score; localStorage.setItem('masak_best',best); document.getElementById('best').textContent=best;}
+  beep(300,.4);
+  showOverlay('Tutup Warung! 🏪',`Kamu berhasil menyajikan <b>${served} porsi</b><br>Total Tip: <b>💰 ${tips}</b><br>Skor Akhir: <b style="font-size:22px;color:#e17055">${score}</b><br>${score>=best&&score>0?'🏆 REKOR BARU! Koki Hebat!':'Terus latihan, kamu pasti bisa jadi Master Chef!'}`,'🔄 MASAK LAGI');
+}
+renderIngredients(); renderCustomers();
+</script>
+</body>
+</html>

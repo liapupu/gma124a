@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Flappy Bird Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #141E30, #243B55);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            max-width: 420px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #f7ff00, #db36a4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #f7ff00;
+        }
+
+        canvas {
+            background-color: #0b0f19;
+            border: 2px solid #db36a4;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(219, 54, 164, 0.4);
+            display: block;
+            margin: 0 auto 15px auto;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #f7ff00, #db36a4);
+            border: none;
+            color: #111;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(219, 54, 164, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(219, 54, 164, 0.6);
+        }
+
+        .instructions {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Flappy Bird</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <div class="score-box">Rekor: <span id="highScore">0</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="380" height="500"></canvas>
+
+        <button class="btn" id="startBtn">Mulai Game</button>
+
+        <div class="instructions">
+            Tekan **Tombol Spasi** atau **Klik/Sentuh Canvas** untuk menerbangkan burung.
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const highScoreElement = document.getElementById("highScore");
+        const startBtn = document.getElementById("startBtn");
+
+        let score = 0;
+        let highScore = localStorage.getItem("flappyHighScore") || 0;
+        highScoreElement.innerText = highScore;
+
+        let isPlaying = false;
+        let gravity = 0.45;
+        let lift = -8;
+        let velocity = 0;
+
+        // Properti Burung
+        let bird = {
+            x: 60,
+            y: 200,
+            radius: 12
+        };
+
+        // Properti Pipa
+        let pipes = [];
+        let pipeWidth = 50;
+        let pipeGap = 130;
+        let frameCount = 0;
+
+        // Kontrol
+        document.addEventListener("keydown", function(e) {
+            if (e.code === "Space") {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        canvas.addEventListener("click", function() {
+            jump();
+        });
+
+        function jump() {
+            if (isPlaying) {
+                velocity = lift;
+            }
+        }
+
+        function startGame() {
+            isPlaying = true;
+            score = 0;
+            scoreElement.innerText = score;
+            bird.y = 200;
+            velocity = 0;
+            pipes = [];
+            frameCount = 0;
+            startBtn.style.display = "none";
+            loop();
+        }
+
+        startBtn.addEventListener("click", startGame);
+
+        function spawnPipe() {
+            let minHeight = 50;
+            let maxHeight = canvas.height - pipeGap - 100;
+            let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+
+            pipes.push({
+                x: canvas.width,
+                top: topHeight,
+                bottom: canvas.height - topHeight - pipeGap,
+                passed: false
+            });
+        }
+
+        function update() {
+            frameCount++;
+            // Munculkan pipa baru setiap 90 frame
+            if (frameCount % 90 === 0) {
+                spawnPipe();
+            }
+
+            // Gerakan burung
+            velocity += gravity;
+            bird.y += velocity;
+
+            // Batas bawah dan atas canvas
+            if (bird.y + bird.radius >= canvas.height - 20) {
+                bird.y = canvas.height - 20 - bird.radius;
+                gameOver();
+            }
+            if (bird.y - bird.radius <= 0) {
+                bird.y = bird.radius;
+                velocity = 0;
+            }
+
+            // Gerakan & Cek Tabrakan Pipa
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 2.5;
+
+                // Cek Tabrakan dengan Burung
+                if (
+                    bird.x + bird.radius > pipes[i].x &&
+                    bird.x - bird.radius < pipes[i].x + pipeWidth &&
+                    (bird.y - bird.radius < pipes[i].top || bird.y + bird.radius > canvas.height - pipes[i].bottom)
+                ) {
+                    gameOver();
+                }
+
+                // Tambah Skor jika melewati pipa
+                if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                    score += 1;
+                    scoreElement.innerText = score;
+                    if (score > highScore) {
+                        highScore = score;
+                        highScoreElement.innerText = highScore;
+                        localStorage.setItem("flappyHighScore", highScore);
+                    }
+                    pipes[i].passed = true;
+                }
+
+                // Hapus pipa yang sudah lewat layar
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Bersihkan Layar
+            ctx.fillStyle = "#0b0f19";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Garis Tanah
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+            // Gambar Pipa
+            pipes.forEach(pipe => {
+                ctx.fillStyle = "#00ffcc";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#00ffcc";
+                // Pipa Atas
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                // Pipa Bawah
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+                ctx.shadowBlur = 0;
+            });
+
+            // Gambar Burung
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#f7ff00";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#f7ff00";
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+        }
+
+        function loop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            startBtn.style.display = "inline-block";
+            startBtn.innerText = "Main Lagi";
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 26px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+            ctx.font = "16px Segoe UI";
+            ctx.fillStyle = "#ccc";
+            ctx.fillText("Skor Kamu: " + score, canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        // Tampilan Awal Canvas
+        ctx.fillStyle = "#0b0f19";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 18px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Tekan 'Mulai Game'", canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

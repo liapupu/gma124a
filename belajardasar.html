@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORTIS - Official Fan Website</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    background: #080808;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* NAVBAR */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 8%;
+    background: #080808;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid #252525;
+}
+
+.logo {
+    font-family: 'Orbitron';
+    font-size: 27px;
+    color: #ff1744;
+    letter-spacing: 4px;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 13px;
+    transition: .3s;
+}
+
+nav a:hover {
+    color: #ff1744;
+}
+
+/* HERO */
+.hero {
+    min-height: 90vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background:
+    linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.85)),
+    url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1600')
+    center/cover;
+}
+
+.hero p {
+    letter-spacing: 5px;
+    color: #ff1744;
+    font-size: 13px;
+}
+
+.hero h1 {
+    font-family: 'Orbitron';
+    font-size: clamp(65px, 13vw, 150px);
+    letter-spacing: 10px;
+    text-shadow: 0 0 30px #ff1744;
+    margin: 20px 0;
+}
+
+.hero h3 {
+    letter-spacing: 7px;
+    font-weight: 300;
+}
+
+.btn {
+    display: inline-block;
+    margin-top: 35px;
+    padding: 14px 35px;
+    border: 1px solid #ff1744;
+    color: white;
+    text-decoration: none;
+    transition: .3s;
+}
+
+.btn:hover {
+    background: #ff1744;
+    box-shadow: 0 0 20px #ff1744;
+}
+
+/* ABOUT */
+.about {
+    text-align: center;
+    padding: 100px 12%;
+}
+
+.title {
+    color: #ff1744;
+    font-family: 'Orbitron';
+    font-size: 32px;
+    margin-bottom: 30px;
+}
+
+.about p {
+    color: #aaa;
+    line-height: 2;
+    max-width: 750px;
+    margin: auto;
+}
+
+/* MEMBERS */
+.members {
+    background: #111;
+    padding: 90px 8%;
+    text-align: center;
+}
+
+.member-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 25px;
+}
+
+.member {
+    width: 180px;
+    transition: .4s;
+}
+
+.member:hover {
+    transform: translateY(-12px);
+}
+
+.member img {
+    width: 100%;
+    height: 230px;
+    object-fit: cover;
+    border: 1px solid #ff1744;
+    filter: grayscale(30%);
+    transition: .4s;
+}
+
+.member:hover img {
+    filter: grayscale(0%);
+    box-shadow: 0 0 20px #ff1744;
+}
+
+.member h3 {
+    margin-top: 15px;
+    letter-spacing: 2px;
+}
+
+.member p {
+    color: #ff1744;
+    font-size: 11px;
+}
+
+/* GALLERY */
+.gallery {
+    padding: 90px 8%;
+    text-align: center;
+}
+
+.gallery-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 20px;
+}
+
+.gallery img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 5px;
+    transition: .4s;
+}
+
+.gallery img:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 20px #ff1744;
+}
+
+/* QUOTE */
+.quote {
+    background: #171717;
+    padding: 80px 10%;
+    text-align: center;
+}
+
+.quote h2 {
+    font-family: 'Orbitron';
+    font-size: 25px;
+    letter-spacing: 4px;
+}
+
+.quote p {
+    color: #ff1744;
+    margin-top: 20px;
+}
+
+/* FOOTER */
+footer {
+    padding: 40px;
+    text-align: center;
+    background: #050505;
+    color: #777;
+}
+
+footer h2 {
+    font-family: 'Orbitron';
+    color: #ff1744;
+    letter-spacing: 5px;
+    margin-bottom: 15px;
+}
+
+footer p {
+    font-size: 11px;
+    margin-top: 10px;
+}
+
+/* RESPONSIVE */
+@media(max-width:600px) {
+    header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    nav a {
+        margin: 0 6px;
+        font-size: 11px;
+    }
+
+    .hero h1 {
+        letter-spacing: 5px;
+    }
+
+    .about {
+        padding: 70px 8%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<header>
+    <h2 class="logo">CORTIS.</h2>
+
+    <nav>
+        <a href="#home">HOME</a>
+        <a href="#about">ABOUT</a>
+        <a href="#members">MEMBERS</a>
+        <a href="#gallery">GALLERY</a>
+    </nav>
+</header>
+
+<!-- HOME -->
+<section class="hero" id="home">
+    <div>
+        <p>THE NEW GENERATION OF K-POP</p>
+        <h1>CORTIS</h1>
+        <h3>COLOR OUTSIDE THE LINES</h3>
+        <a href="#about" class="btn">EXPLORE MORE ↗</a>
+    </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="about">
+    <h2 class="title">ABOUT CORTIS</h2>
+
+    <p>
+        Welcome to the world of CORTIS!
+        CORTIS is a South Korean boy group under
+        BIGHIT MUSIC. The group consists of five
+        talented members with unique personalities,
+        creativity, and incredible energy.
+        Let's discover their amazing journey together!
+    </p>
+</section>
+
+<!-- MEMBERS -->
+<section class="members" id="members">
+    <h2 class="title">MEET THE MEMBERS</h2>
+
+    <div class="member-container">
+
+        <div class="member">
+            <img src="https://placehold.co/400x500/222/fff?text=JAMES" alt="James">
+            <h3>JAMES</h3>
+            <p>CORTIS MEMBER</p>
+        </div>
+
+        <div class="member">
+            <img src="https://placehold.co/400x500/222/fff?text=JUHOON" alt="Juhoon">
+            <h3>JUHOON</h3>
+            <p>CORTIS MEMBER</p>
+        </div>
+
+        <div class="member">
+            <img src="https://placehold.co/400x500/222/fff?text=SEONGHYEON" alt="Seonghyeon">
+            <h3>SEONGHYEON</h3>
+            <p>CORTIS MEMBER</p>
+        </div>
+
+        <div class="member">
+            <img src="https://placehold.co/400x500/222/fff?text=MINHO" alt="Martin">
+            <h3>MARTIN</h3>
+            <p>CORTIS MEMBER</p>
+        </div>
+
+        <div class="member">
+            <img src="https://placehold.co/400x500/222/fff?text=KEONHO" alt="Keonho">
+            <h3>KEONHO</h3>
+            <p>CORTIS MEMBER</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery" id="gallery">
+    <h2 class="title">OUR GALLERY</h2>
+
+    <div class="gallery-container">
+        <img src="https://placehold.co/600x400/222/fff?text=CORTIS+01" alt="Cortis gallery 1">
+        <img src="https://placehold.co/600x400/333/fff?text=CORTIS+02" alt="Cortis gallery 2">
+        <img src="https://placehold.co/600x400/444/fff?text=CORTIS+03" alt="Cortis gallery 3">
+    </div>
+</section>
+
+<!-- QUOTE -->
+<section class="quote">
+    <h2>COLOR OUTSIDE THE LINES</h2>
+    <p>BE DIFFERENT. BE CREATIVE. BE CORTIS.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <h2>CORTIS.</h2>
+    <p>UNOFFICIAL FAN WEBSITE</p>
+    <p>Made with ♥ for CORTIS fans</p>
+    <p>© 2026 ALL RIGHTS RESERVED</p>
+</footer>
+
+</body>
+</html>

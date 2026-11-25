@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Platformer Jump Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #09031d, #1a0b3c, #050210);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #00ffcc, #ff007f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .score-box span {
+            color: #00ffcc;
+        }
+
+        canvas {
+            background-color: #030108;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            display: block;
+            margin: 0 auto 15px auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ffcc, #0072ff);
+            border: none;
+            color: #000;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 204, 0.6);
+        }
+
+        .instructions {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Neon Jump Arcade</h1>
+        
+        <div class="scoreboard">
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <div class="score-box">Rekor: <span id="highScore">0</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="360" height="450"></canvas>
+
+        <button class="btn" id="startBtn">Mulai Game</button>
+
+        <div class="instructions">
+            Gunakan **Tombol Panah Kiri/Kanan** atau **Sentuh/Geser Layar** untuk menggerakkan karakter ke kiri dan ke kanan.
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const highScoreElement = document.getElementById("highScore");
+        const startBtn = document.getElementById("startBtn");
+
+        let score = 0;
+        let highScore = localStorage.getItem("jumpHighScore") || 0;
+        highScoreElement.innerText = highScore;
+
+        let isPlaying = false;
+        let animationId = null;
+
+        // Karakter (Doodle / Kotak Neon)
+        let player = {
+            x: canvas.width / 2 - 15,
+            y: canvas.height - 100,
+            width: 30,
+            height: 30,
+            vx: 0,
+            vy: 0,
+            gravity: 0.35,
+            jumpForce: -10
+        };
+
+        // Platform
+        let platforms = [];
+        const platformWidth = 65;
+        const platformHeight = 14;
+        let platformCount = 5;
+
+        // Kontrol
+        let rightPressed = false;
+        let leftPressed = false;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight" || e.key === "d") rightPressed = true;
+            if (e.key === "ArrowLeft" || e.key === "a") leftPressed = true;
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowRight" || e.key === "d") rightPressed = false;
+            if (e.key === "ArrowLeft" || e.key === "a") leftPressed = false;
+        });
+
+        // Kontrol Sentuh / Mouse untuk HP & Laptop
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            player.x = mouseX - player.width / 2;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            player.x = touchX - player.width / 2;
+        }, { passive: true });
+
+        function initPlatforms() {
+            platforms = [];
+            for (let i = 0; i < platformCount; i++) {
+                let pY = canvas.height - (i * (canvas.height / platformCount)) - 40;
+                platforms.push({
+                    x: Math.random() * (canvas.width - platformWidth),
+                    y: pY,
+                    width: platformWidth,
+                    height: platformHeight
+                });
+            }
+        }
+
+        function update() {
+            // Pergerakan horizontal keyboard
+            if (rightPressed) player.x += 5;
+            if (leftPressed) player.x -= 5;
+
+            // Tembus dinding kiri/kanan (wrap around)
+            if (player.x > canvas.width) player.x = -player.width;
+            if (player.x < -player.width) player.x = canvas.width;
+
+            // Gravitasi & Fisika Lompatan
+            player.vy += player.gravity;
+            player.y += player.vy;
+
+            // Kamera ke atas jika pemain melewati tengah layar
+            if (player.y < canvas.height / 2) {
+                let diff = canvas.height / 2 - player.y;
+                player.y = canvas.height / 2;
+                score += Math.floor(diff);
+                scoreElement.innerText = score;
+
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreElement.innerText = highScore;
+                    localStorage.setItem("jumpHighScore", highScore);
+                }
+
+                // Turunkan platform
+                platforms.forEach(p => {
+                    p.y += diff;
+                    if (p.y > canvas.height) {
+                        p.y = 0;
+                        p.x = Math.random() * (canvas.width - platformWidth);
+                    }
+                });
+            }
+
+            // Cek Tabrakan dengan Platform (hanya saat jatuh ke bawah)
+            platforms.forEach(p => {
+                if (
+                    player.vy > 0 &&
+                    player.x + player.width > p.x &&
+                    player.x < p.x + p.width &&
+                    player.y + player.height >= p.y &&
+                    player.y + player.height <= p.y + p.height + player.vy
+                ) {
+                    player.vy = player.jumpForce; // Lompat otomatis
+                }
+            });
+
+            // Game Over jika jatuh ke bawah layar
+            if (player.y > canvas.height) {
+                gameOver();
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = "#030108";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Platform
+            ctx.fillStyle = "#00ffcc";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#00ffcc";
+            platforms.forEach(p => {
+                ctx.beginPath();
+                ctx.roundRect(p.x, p.y, p.width, p.height, 6);
+                ctx.fill();
+            });
+
+            // Gambar Karakter Pemain
+            ctx.fillStyle = "#ff007f";
+            ctx.shadowColor = "#ff007f";
+            ctx.beginPath();
+            ctx.roundRect(player.x, player.y, player.width, player.height, 8);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            score = 0;
+            scoreElement.innerText = score;
+            player.x = canvas.width / 2 - 15;
+            player.y = canvas.height - 120;
+            player.vy = -10;
+            initPlatforms();
+            isPlaying = true;
+            startBtn.style.display = "none";
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            startBtn.style.display = "inline-block";
+            startBtn.innerText = "Main Lagi";
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 24px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 15);
+
+            ctx.font = "16px Segoe UI";
+            ctx.fillStyle = "#00ffcc";
+            ctx.fillText("Skor Akhir: " + score, canvas.width / 2, canvas.height / 2 + 20);
+        }
+
+        startBtn.addEventListener("click", startGame);
+
+        // Tampilan Awal Canvas
+        ctx.fillStyle = "#030108";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Tekan 'Mulai Game'", canvas.width / 2, canvas.height / 2);
+    </script>
+</body>
+</html>

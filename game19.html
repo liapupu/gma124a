@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pizza Maker 🍕✨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+  body{background:linear-gradient(180deg,#ff7675,#fdcb6e,#ffeaa7);min-height:100vh;display:flex;justify-content:center;padding:12px;color:#333}
+  .wrap{width:100%;max-width:560px;text-align:center}
+  h1{font-size:26px;text-shadow:0 2px 0 #fff}
+  h1 span{color:#d63031}
+  .sub{font-size:12px;opacity:.8;margin:4px 0 10px}
+  .hud{display:flex;gap:8px;margin-bottom:10px}
+  .hcard{background:white;border-radius:14px;padding:9px;flex:1;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+  .hcard b{font-size:19px;display:block;color:#d63031}
+  .hcard small{font-size:10px;letter-spacing:1px;opacity:.7}
+  .bar{height:10px;background:#eee;border-radius:99px;overflow:hidden;margin-bottom:10px}
+  #timeBar{height:100%;background:linear-gradient(90deg,#00b894,#fdcb6e,#ff4757);width:100%;transition:width 1s linear}
+  #customers{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+  .cust{background:white;border-radius:18px;padding:10px 6px;width:32%;box-shadow:0 4px 12px rgba(0,0,0,.1);border:3px solid transparent;cursor:pointer;transition:.2s}
+  .cust.active{border-color:#e17055;transform:scale(1.04);box-shadow:0 0 0 3px #fdcb6e}
+  .cust .face{font-size:32px}
+  .cust .mood{font-size:11px}
+  .cust .order{font-size:12px;font-weight:800;margin:4px 0 2px}
+  .cust .toppings{font-size:18px;background:#fff3cd;border-radius:10px;padding:4px;min-height:30px}
+  .cust .pat{height:6px;background:#eee;border-radius:99px;overflow:hidden;margin-top:6px}
+  .cust .pat i{display:block;height:100%;background:#00b894;transition:width .5s}
+  .cust.angry .pat i{background:#ff4757}
+  .cust.done{opacity:.6;border-color:#00b894}
+  #kitchen{background:white;border-radius:22px;padding:14px;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+  #pizzaWrap{position:relative;width:210px;height:210px;margin:8px auto}
+  #pizza{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle,#ffdd59 0%,#ffdd59 62%,#fdcb6e 62%,#fdcb6e 78%,#e17055 78%,#e17055 100%);position:relative;box-shadow:0 8px 18px rgba(0,0,0,.18), inset 0 0 20px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:.3s}
+  #pizza.cooking{animation:shake .25s infinite}
+  #pizza.baked{background:radial-gradient(circle,#fdcb6e 0%,#fdcb6e 62%,#e17055 62%,#e17055 78%,#a94e35 78%,#a94e35 100%)}
+  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}
+  #toppingLayer{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;padding:28px;pointer-events:none}
+  #toppingLayer span{font-size:26px;animation:pop .3s}
+  @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+  #pizzaLabel{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+  #ovenBar{height:10px;background:#eee;border-radius:99px;overflow:hidden;display:none;margin:10px 0}
+  #ovenBar i{display:block;height:100%;background:linear-gradient(90deg,#ff4757,#ff7675,#fdcb6e);width:0%}
+  #ovenEmoji{font-size:28px;display:none}
+  .section{margin-top:10px;text-align:left}
+  .section b{font-size:12px;letter-spacing:1px;opacity:.7}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .ing{background:#f8f9fa;border:2px solid #eee;border-radius:14px;padding:10px 4px;cursor:pointer;font-size:26px}
+  .ing small{display:block;font-size:10px;font-weight:700;margin-top:2px}
+  .ing:active{transform:scale(.92)}
+  .ing.selected{border-color:#00b894;background:#dfe6e9;box-shadow:0 0 0 3px #00b894}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .actions button{flex:1;padding:14px;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer}
+  .btn-trash{background:#dfe6e9;box-shadow:0 5px 0 #b2bec3}
+  .btn-bake{background:#ff4757;color:white;box-shadow:0 5px 0 #c0392b}
+  .btn-serve{background:#00b894;color:white;box-shadow:0 5px 0 #00947a}
+  .actions button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .actions button:disabled{opacity:.5}
+  .menu{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+  .menu span{background:#fff3cd;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700}
+  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;z-index:99}
+  .modal{background:white;border-radius:22px;padding:24px 20px;max-width:380px;width:100%;text-align:center}
+  .modal h2{font-size:28px;line-height:1.1;margin:8px 0}
+  .modal p{font-size:13px;line-height:1.6;opacity:.85;margin-bottom:14px}
+  button.big{background:#d63031;color:white;border:none;padding:13px 22px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 5px 0 #a71a1a;width:100%}
+  .hidden{display:none!important}
+  .float{animation:floatY 2s infinite}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 16px;border-radius:999px;font-weight:800;font-size:13px;z-index:100;display:none;box-shadow:0 6px 14px rgba(0,0,0,.3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍕 PIZZA <span>MAKER</span> ✨</h1>
+  <p class="sub">Toko pizza paling rame! Bikin pizza sesuai pesanan, jangan sampai gosong!</p>
+
+  <div class="hud">
+    <div class="hcard"><b id="score">0</b><small>SKOR</small></div>
+    <div class="hcard"><b id="served">0</b><small>PIZZA</small></div>
+    <div class="hcard"><b id="tips">💰 0</b><small>TIP</small></div>
+    <div class="hcard"><b id="best">0</b><small>TERBAIK</small></div>
+  </div>
+  <div class="bar"><div id="timeBar"></div></div>
+
+  <div id="customers"></div>
+
+  <div id="kitchen">
+    <h3>🍕 PIZZA KAMU — Klik pelanggan, lalu klik toppingnya!</h3>
+    <div id="pizzaWrap">
+      <div id="pizza"><div id="toppingLayer"></div></div>
+      <div id="pizzaLabel">Pilih Pelanggan</div>
+    </div>
+    <div id="ovenEmoji">🔥 Memanggang...</div>
+    <div id="ovenBar"><i id="ovenFill"></i></div>
+
+    <div class="section"><b>🧀 TOPPING — Pilih 3 topping</b>
+      <div class="grid" id="toppingsGrid"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-trash" onclick="clearPizza()">🗑️ Buang</button>
+      <button class="btn-bake" id="bakeBtn" onclick="bake()">🔥 PANGGANG</button>
+      <button class="btn-serve" id="serveBtn" onclick="serve()" disabled>🍽️ SAJI</button>
+    </div>
+
+    <div class="menu">
+      <span>🍕 Pepperoni = 🧀+🥩+🍅</span>
+      <span>🍕 Veggie = 🧀+🍄+🫑</span>
+      <span>🍕 Hawaii = 🧀+🍍+🥩</span>
+      <span>🍕 Seafood = 🧀+🦐+🌽</span>
+      <span>🍕 Spesial = 🧀+🥩+🍄</span>
+      <span>🍕 Keju = 🧀+🧀+🧀</span>
+    </div>
+  </div>
+  <p style="font-size:11px;opacity:.7;margin-top:10px">💡 Pelanggan yang sabarnya habis akan pergi -50 • Sajikan cepat dapat Tip +60!</p>
+</div>
+
+<div id="overlay">
+  <div class="modal">
+    <div class="float" style="font-size:58px">🍕👨‍🍳</div>
+    <h2>Selamat Datang<br>di Pizza Maker!</h2>
+    <p>Kamu jadi chef pizza hari ini! Lihat pesanan pelanggan, kasih topping yang benar, panggang sampai matang, lalu sajikan.<br><b>Best: <span id="bestText">0</span></b><br>Waktu main: 90 detik</p>
+    <button class="big" onclick="closeOverlay();startGame()">▶ MULAI BIKIN PIZZA!</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const MENUS={
+  'Pepperoni':{needs:['🧀','🥩','🍅'],price:120},
+  'Veggie':{needs:['🧀','🍄','🫑'],price:110},
+  'Hawaii':{needs:['🧀','🍍','🥩'],price:130},
+  'Seafood':{needs:['🧀','🦐','🌽'],price:140},
+  'Spesial':{needs:['🧀','🥩','🍄'],price:135},
+  'Keju Lumer':{needs:['🧀','🧀','🧀'],price:100},
+};
+const ALL=['🧀','🥩','🍅','🍄','🫑','🍍','🦐','🌽'];
+const TNAME={'🧀':'Keju','🥩':'Daging','🍅':'Tomat','🍄':'Jamur','🫑':'Paprika','🍍':'Nanas','🦐':'Udang','🌽':'Jagung'};
+const FACES=['🧕','👩','👨','👵','👧','🧑','👦','👱‍♀️'];
+let score=0, served=0, tips=0, best=localStorage.getItem('pizza_best')||0;
+let playing=false, timeLeft=90, selected=0, plate=[], baking=false, baked=false, customers=[], timerInt=null, patInt=null;
+document.getElementById('best').textContent=best;
+document.getElementById('bestText').textContent=best;
+
+function beep(f=600,d=.08){try{let c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.09;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function toast(m,c='#333'){let t=document.getElementById('toast');t.textContent=m;t.style.background=c;t.style.display='block';setTimeout(()=>t.style.display='none',1600);}
+function closeOverlay(){document.getElementById('overlay').classList.add('hidden')}
+function showOverlay(title,msg,btn){
+  let ov=document.getElementById('overlay'); ov.classList.remove('hidden');
+  ov.querySelector('.modal').innerHTML=`<div style="font-size:58px">🍕</div><h2>${title}</h2><p>${msg}</p><button class="big" onclick="closeOverlay();startGame()">${btn}</button>`;
+}
+function startGame(){
+  score=0; served=0; tips=0; timeLeft=90; plate=[]; baking=false; baked=false; selected=0; playing=true; customers=[];
+  for(let i=0;i<3;i++) newCustomer(i);
+  renderCustomers(); renderToppings(); renderPizza(); updateHUD();
+  clearInterval(timerInt); clearInterval(patInt);
+  timerInt=setInterval(()=>{timeLeft--; document.getElementById('timeBar').style.width=(timeLeft/90*100)+'%'; if(timeLeft<=10) beep(300); if(timeLeft<=0) gameOver();},1000);
+  patInt=setInterval(()=>{
+    if(!playing) return;
+    customers.forEach((c,idx)=>{
+      if(c.done) return;
+      c.patience-=(2+Math.random()*2);
+      if(c.patience<=0){c.done=true;c.left=true;score=Math.max(0,score-50);toast('😡 '+c.name+' pergi! -50','#ff4757');beep(200);setTimeout(()=>newCustomer(idx),800);}
+    });
+    renderCustomers(); updateHUD();
+  },800);
+  beep(800);
+}
+function newCustomer(idx){
+  let keys=Object.keys(MENUS);
+  let order=keys[Math.floor(Math.random()*keys.length)];
+  customers[idx]={name:FACES[Math.floor(Math.random()*FACES.length)],order,patience:100,done:false,left:false};
+  renderCustomers();
+}
+function renderCustomers(){
+  let w=document.getElementById('customers'); w.innerHTML='';
+  customers.forEach((c,i)=>{
+    let d=document.createElement('div');
+    d.className='cust'+(i===selected?' active':'')+(c.done?' done':'')+(c.patience<35?' angry':'');
+    d.onclick=()=>{selected=i; plate=[]; baked=false; baking=false; document.getElementById('ovenBar').style.display='none'; document.getElementById('ovenEmoji').style.display='none'; renderCustomers(); renderToppings(); renderPizza(); beep(600);};
+    let mood=c.done?(c.left?'😡 Pergi!':'✅ Puas!'):c.patience<35?'😤 Marah!':c.patience<70?'😐 Bosan':'😊 Menunggu...';
+    d.innerHTML=`<div class="face">${c.name}</div><div class="mood">${mood}</div><div class="order">${c.order}</div><div class="toppings">${MENUS[c.order].needs.join(' ')}</div><div class="pat"><i style="width:${Math.max(0,c.patience)}%"></i></div><small>${c.done?'':'Sabar '+Math.floor(Math.max(0,c.patience))+'%'}</small>`;
+    w.appendChild(d);
+  });
+}
+function renderToppings(){
+  let w=document.getElementById('toppingsGrid'); w.innerHTML='';
+  ALL.forEach(em=>{
+    let b=document.createElement('div'); b.className='ing'+(plate.includes(em)?' selected':'');
+    // untuk Keju Lumer, hitung jumlah
+    let count=plate.filter(x=>x===em).length;
+    b.innerHTML=`${em}<small>${TNAME[em]} ${count>1?'x'+count:''}</small>`;
+    b.onclick=()=>{
+      if(!playing||baking) return;
+      // khusus keju boleh 3x
+      if(em==='🧀' && plate.filter(x=>x==='🧀').length<3){ plate.push(em); beep(700); }
+      else if(plate.includes(em)){ plate=plate.filter(x=>x!==em); }
+      else { if(plate.length>=3){ toast('Max 3 topping!','#ff4757'); return; } plate.push(em); beep(700); }
+      baked=false; document.getElementById('serveBtn').disabled=true;
+      renderToppings(); renderPizza();
+    };
+    w.appendChild(b);
+  });
+}
+function renderPizza(){
+  let layer=document.getElementById('toppingLayer');
+  layer.innerHTML=plate.map(e=>`<span>${e}</span>`).join('');
+  let cust=customers[selected];
+  document.getElementById('pizzaLabel').textContent = baking?'🔥 Memanggang...': baked?'✅ Siap Disajikan!': cust? 'Untuk: '+cust.order+' • '+plate.length+'/3':'Pilih Pelanggan';
+  document.getElementById('pizza').className = baked?'baked': baking?'cooking':'';
+  if(baking) document.getElementById('pizza').classList.add('cooking');
+}
+function clearPizza(){ if(baking) return; plate=[]; baked=false; document.getElementById('serveBtn').disabled=true; renderToppings(); renderPizza(); beep(400); }
+function bake(){
+  if(!playing||plate.length===0||baking){ if(plate.length===0) toast('Pilih topping dulu!','#ff4757'); return; }
+  if(plate.length<3){ toast('Topping belum lengkap! Butuh 3','#ff4757'); return; }
+  baking=true; renderPizza();
+  document.getElementById('ovenBar').style.display='block';
+  document.getElementById('ovenEmoji').style.display='block';
+  let p=0; beep(500);
+  let iv=setInterval(()=>{
+    p+=10; document.getElementById('ovenFill').style.width=p+'%';
+    if(p>=100){ clearInterval(iv); baking=false; baked=true; document.getElementById('ovenBar').style.display='none'; document.getElementById('ovenEmoji').style.display='none'; document.getElementById('serveBtn').disabled=false; renderPizza(); beep(1000); toast('✅ Pizza matang! Cepat sajikan!','#00b894'); }
+  },110);
+}
+function serve(){
+  if(!playing||!baked) return;
+  let cust=customers[selected];
+  if(!cust||cust.done){ toast('Pelanggan ini sudah pergi!','#ff4757'); return; }
+  let need=[...MENUS[cust.order].needs].sort();
+  let got=[...plate].sort();
+  let ok=JSON.stringify(need)===JSON.stringify(got);
+  if(ok){
+    let base=MENUS[cust.order].price;
+    let tip = cust.patience>70?60: cust.patience>40?25:0;
+    score+=base+tip; tips+=tip; served++;
+    toast(`🎉 Benar! +${base} ${tip?'+ Tip '+tip:''}`,'#00b894'); beep(900); setTimeout(()=>beep(1200),100);
+    cust.done=true;
+    setTimeout(()=>newCustomer(selected),900);
+  } else {
+    score=Math.max(0,score-20); cust.patience-=25;
+    toast(`❌ Salah! Harusnya: ${need.join(' ')} • -20`,'#ff4757'); beep(200);
+  }
+  plate=[]; baked=false; document.getElementById('serveBtn').disabled=true;
+  renderCustomers(); renderToppings(); renderPizza(); updateHUD();
+}
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('served').textContent=served;
+  document.getElementById('tips').textContent='💰 '+tips;
+  document.getElementById('timeBar').style.width=(timeLeft/90*100)+'%';
+}
+function gameOver(){
+  playing=false; clearInterval(timerInt); clearInterval(patInt);
+  if(score>best){best=score; localStorage.setItem('pizza_best',best); document.getElementById('best').textContent=best;}
+  beep(300,.4);
+  showOverlay('Toko Tutup! 🏪',`Kamu berhasil bikin <b>${served} pizza</b><br>Total Tip: <b>💰 ${tips}</b><br>Skor Akhir: <b style="font-size:22px;color:#d63031">${score}</b><br>${score>=best&&score>0?'🏆 REKOR BARU! Chef Pizza Hebat!':'Terus latihan, kamu pasti bisa jadi Master Pizza!'}`,'🔄 BIKIN LAGI');
+}
+renderToppings(); renderCustomers();
+</script>
+</body>
+</html>
